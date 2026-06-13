@@ -1,0 +1,30 @@
+# ── PyTorch (GPU) — works with CUDA 13.0 on RTX 3060 ─────────────
+# Install PyTorch separately first:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+#
+# Then install the rest:
+# pip install -r requirements.txt
+
+# ── Computer vision ───────────────────────────────────────────────
+torchvision>=0.19.0
+opencv-python==4.9.0.80
+Pillow==10.3.0
+
+# ── Classical ML ──────────────────────────────────────────────────
+scikit-learn==1.4.2
+scikit-image==0.23.2
+joblib==1.4.2
+
+# ── Data & visualization ──────────────────────────────────────────
+numpy==1.26.4
+pandas>=2.0            # pt_06 comparison dashboard
+scipy>=1.11            # McNemar's test (scipy.stats)
+matplotlib==3.8.4
+seaborn==0.13.2
+tqdm==4.66.4
+torchinfo>=1.8         # model summary in pt_05 (optional; auto-installed if missing)
+
+# ── Jupyter ───────────────────────────────────────────────────────
+jupyter==1.0.0
+ipykernel==6.29.4
+ipywidgets==8.1.3

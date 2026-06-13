@@ -1,0 +1,16 @@
+[
+  {
+    "tag": "resnet50",
+    "accuracy": 0.8938775510204081,
+    "macro_f1": 0.9032353722606468,
+    "weighted_f1": 0.893469566161898,
+    "macro_roc_auc": 0.9883577588237216,
+    "ece": 0.03672901793402068,
+    "inference_ms": 3.10386862503492,
+    "inference_ms_std": 0.10017679560909583,
+    "checkpoint": "C:\\Projects\\Brain-Tumor-Improved\\models\\resnet50_best.pth",
+    "params_m": 24.034116,
+    "temperature": 1.356608271598816,
+    "ece_calibrated": 0.038054894245400726
+  }
+]

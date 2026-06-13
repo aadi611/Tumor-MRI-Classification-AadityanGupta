@@ -1,0 +1,11 @@
+[
+  {
+    "tag": "svm_hog",
+    "accuracy": 0.7715736040609137,
+    "macro_f1": 0.7275570224280066,
+    "weighted_f1": 0.7182711777394091,
+    "macro_roc_auc": 0.9456478916512152,
+    "ece": null,
+    "params_m": null
+  }
+]
