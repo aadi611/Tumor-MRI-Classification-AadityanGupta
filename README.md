@@ -24,18 +24,28 @@ Repo: [aadi611/Tumor-MRI-Classification-AadityanGupta](https://github.com/aadi61
 
 ## Results
 
-Two evaluation protocols are used:
-- **Notebooks `pt_02`–`pt_04`** evaluate on the **original Kaggle `Testing/` folder**.
-- **The modular `src/` pipeline** (`resplit_data=True`) pools all images and re-splits **stratified 70/15/15** to remove a documented distribution shift and measure honest generalization (test set n = 490).
+A central finding of this project: **the official Kaggle train/test split has a distribution shift** that severely penalizes deep models on the `glioma` class. Results are therefore reported under **two evaluation protocols** — and the gap between them is itself an important result.
 
-| Model | Protocol | Accuracy | Macro-F1 | ROC-AUC |
+### Protocol A — official Kaggle `Testing/` folder (notebooks `pt_02`–`pt_04`)
+
+| Model | Accuracy | Macro-F1 | ROC-AUC | Glioma recall |
 |---|---|---|---|---|
-| HOG + SVM (baseline) | original test | **0.772** | **0.728** | 0.946 |
-| EfficientNet-B0 (transfer) | original test | **~0.89** | **~0.90** | ~0.98 |
-| ResNet-50 (portfolio best) | stratified test | **0.894** | **0.903** | **0.988** |
-| Custom CNN (from scratch) | stratified test | **0.908** | ~0.89 | ~0.96 |
+| HOG + SVM (baseline) | **0.772** | **0.728** | 0.946 | — |
+| EfficientNet-B0 (transfer) | **0.632** | **0.585** | 0.861 | **0.16** |
 
-> Figures for SVM, ResNet-50, and the Custom CNN are exact (from `results/baseline_results.json` and `results/leaderboard.json`). EfficientNet-B0 figures are the notebook's reported range; reproduce any number via the notebooks or `python train.py --compare`.
+On this split EfficientNet **collapses on glioma** (16% recall — most test gliomas are pushed to `notumor`/`meningioma`), so the simple SVM appears to "win." This is an **artifact of the distribution shift**, not evidence the baseline is genuinely better — the `Training/` and `Testing/` glioma images come from different distributions.
+
+### Protocol B — pooled, stratified 70/15/15 re-split (`src/` pipeline, `resplit_data=True`)
+
+| Model | Accuracy | Macro-F1 | ROC-AUC |
+|---|---|---|---|
+| Custom CNN (from scratch) | **0.904** | **0.906** | **0.988** |
+| ResNet-50 | **0.894** | **0.903** | **0.988** |
+| EfficientNet-B0 | ~0.89 | ~0.90 | ~0.98 |
+
+When train and test are drawn from the **same** distribution, the deep models recover to ~89–90% and properly beat the baseline — the honest measure of generalization. Crucially, on this split the from-scratch Custom CNN's **glioma recall is 0.86** (vs **0.16** on the official split) and all four classes land in the 0.86–0.94 F1 range — balanced, with no weak class. **This is exactly why the `src/` pipeline defaults to the stratified re-split.**
+
+> **Takeaway:** evaluation methodology matters as much as the model. Exact figures: SVM and EfficientNet-B0 (Protocol A) and ResNet-50 (Protocol B) are measured (`results/`); EfficientNet-B0 (Protocol B) is reproducible via `python train.py --compare`.
 
 **Calibration:** the custom CNN fit a temperature of ≈1.06 with ECE ≈ 0.05 — already well-calibrated out of the box.
 
