@@ -28,3 +28,8 @@ torchinfo>=1.8         # model summary in pt_05 (optional; auto-installed if mis
 jupyter==1.0.0
 ipykernel==6.29.4
 ipywidgets==8.1.3
+
+# ── Live demo app (FastAPI) ───────────────────────────────────────
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9    # image upload handling

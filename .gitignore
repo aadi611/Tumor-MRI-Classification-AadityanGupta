@@ -54,3 +54,12 @@ project_documentation.html
 # Local-only study guide / book (kept on disk, intentionally not on GitHub)
 docs/
 build_book.py
+
+# Presentation artifacts (PDFs, HTML exports, slide previews, scripts)
+*.pdf
+*.html
+PRESENTATION_SCRIPT.md
+DEMO_README.md
+slide_previews/
+.design_tmp/
+run_demo.bat
