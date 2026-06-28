@@ -283,15 +283,6 @@ footer{max-width:1500px;margin:0 auto;padding:8px 24px 28px;
       </div>
 
       <div class="mt">
-        <div class="section-label">Benchmark — Protocol B</div>
-        <div class="metrics">
-          <div class="metric"><div class="v" id="sp-acc">—</div><div class="k">Accuracy</div></div>
-          <div class="metric"><div class="v" id="sp-f1">—</div><div class="k">Macro F1</div></div>
-          <div class="metric"><div class="v" id="sp-auc">—</div><div class="k">ROC-AUC</div></div>
-        </div>
-      </div>
-
-      <div class="mt">
         <div class="section-label">Specifications</div>
         <div class="specs">
           <div class="spec"><span class="k">Type</span><span class="v" id="sp-type">—</span></div>
@@ -512,9 +503,6 @@ function renderSpecs(){
   $('sp-params').textContent=m.params||'—';
   $('sp-protocol').textContent=ex.protocol||'—';
   $('sp-input').textContent=ex.input||'—';
-  $('sp-acc').textContent=ex.acc||'—';
-  $('sp-f1').textContent=ex.f1||'—';
-  $('sp-auc').textContent=ex.auc||'—';
   $('sp-ece').textContent=ex.ece||'—';
   $('sp-lat').textContent=ex.lat||'—';
   $('sp-xai').textContent=ex.xai||'—';
