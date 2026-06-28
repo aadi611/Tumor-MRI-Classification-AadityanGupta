@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain Tumor MRI Classifier — Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{--cyan:#22d3ee;--purple:#a855f7;--indigo:#6366f1;--ink:#ECEAF6;--muted:#9b97c0;--card:rgba(124,124,240,.07);--line:rgba(124,124,240,.22);}
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);min-height:100vh;
+    background:radial-gradient(120% 120% at 80% -10%,#241b54 0%,#0e0b22 52%,#08070f 100%);
+    background-attachment:fixed;padding:40px 20px;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  header{text-align:center;margin-bottom:30px;}
+  .kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--cyan);}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:600;letter-spacing:-.02em;
+    margin:8px 0;background:linear-gradient(92deg,#fff 20%,#c9bdff 60%,var(--cyan));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .sub{color:var(--muted);font-weight:300;font-size:16px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px;}
+  @media(max-width:780px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;}
+  .lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--cyan);margin-bottom:12px;}
+  .step{display:inline-block;font-family:'IBM Plex Mono',monospace;background:var(--indigo);color:#fff;
+    border-radius:6px;padding:1px 8px;font-size:12px;margin-right:8px;}
+  select{width:100%;padding:14px 16px;border-radius:12px;background:#13131c;color:var(--ink);
+    border:1px solid var(--line);font-family:'IBM Plex Sans';font-size:15px;cursor:pointer;}
+  .modelmeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .chip{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#cdd0ec;padding:5px 11px;border-radius:999px;
+    background:rgba(124,124,240,.12);border:1px solid rgba(124,124,240,.28);}
+  .status{margin-top:14px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:18px;}
+  .status.ready{color:#55e6a5;} .status.busy{color:#ffd479;}
+  .drop{margin-top:6px;border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;
+    cursor:pointer;transition:.2s;background:rgba(255,255,255,.02);}
+  .drop:hover,.drop.over{border-color:var(--cyan);background:rgba(34,211,238,.06);}
+  .drop p{color:var(--muted);font-size:14px;}
+  .drop .big{font-size:34px;margin-bottom:6px;}
+  #preview{max-width:100%;max-height:260px;border-radius:10px;margin-top:14px;display:none;border:1px solid var(--line);}
+  button.go{width:100%;margin-top:16px;padding:14px;border:none;border-radius:12px;cursor:pointer;
+    font-family:'Space Grotesk';font-weight:600;font-size:16px;color:#0b0a18;
+    background:linear-gradient(92deg,var(--cyan),var(--indigo));transition:.2s;}
+  button.go:disabled{opacity:.4;cursor:not-allowed;}
+  button.go:hover:not(:disabled){filter:brightness(1.1);}
+  #result{margin-top:24px;display:none;}
+  .verdict{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    background:linear-gradient(135deg,rgba(34,211,238,.14),rgba(168,85,247,.08));
+    border:1px solid rgba(34,211,238,.3);border-radius:16px;padding:22px 26px;margin-bottom:18px;}
+  .verdict .plabel{font-family:'Space Grotesk';font-size:34px;font-weight:600;color:#fff;}
+  .verdict .conf{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--cyan);}
+  .verdict .by{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
+  .bar{margin:12px 0;}
+  .bar .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;}
+  .bar .row .v{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
+  .track{height:14px;border-radius:7px;background:rgba(255,255,255,.07);overflow:hidden;}
+  .fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--indigo),var(--purple));
+    width:0;transition:width .6s ease;}
+  .fill.top{background:linear-gradient(90deg,var(--cyan),var(--indigo));}
+  #gradcam{margin:18px 0 6px;}
+  .gclbl{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.05em;color:var(--cyan);margin-bottom:8px;}
+  .gcimg{width:100%;max-width:300px;border-radius:12px;border:1px solid var(--line);display:block;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);}
+  .gccap{font-size:12px;color:var(--muted);margin-top:7px;font-style:italic;max-width:300px;}
+  .gcna{font-size:13px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding:8px 0;}
+  .err{color:#ff8a8a;font-size:14px;margin-top:12px;font-family:'IBM Plex Mono',monospace;}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Capstone · Live Demo</div>
+    <h1>Brain Tumor MRI Classifier</h1>
+    <div class="sub">Pick a model · upload an MRI · see the predicted tumour type and per-class scores</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: model + upload -->
+    <div class="card">
+      <div class="lbl"><span class="step">1</span> Choose a model</div>
+      <select id="model"></select>
+      <div class="modelmeta" id="meta"></div>
+      <div class="status" id="status">Loading model list…</div>
+
+      <div class="lbl" style="margin-top:24px;"><span class="step">2</span> Upload an MRI scan</div>
+      <div class="drop" id="drop">
+        <div class="big">🧠</div>
+        <p><b>Click to choose</b> or drag &amp; drop a brain-MRI image</p>
+        <p style="font-size:12px;margin-top:4px;">JPG / PNG</p>
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+      <img id="preview" alt="preview">
+      <button class="go" id="go" disabled>Analyze scan</button>
+      <div class="err" id="err"></div>
+    </div>
+
+    <!-- RIGHT: result -->
+    <div class="card">
+      <div class="lbl"><span class="step">3</span> Result</div>
+      <div id="placeholder" style="color:var(--muted);font-weight:300;font-size:15px;padding:30px 0;text-align:center;">
+        Your prediction will appear here once you upload a scan and hit <b>Analyze</b>.
+      </div>
+      <div id="result">
+        <div class="verdict">
+          <span class="plabel" id="plabel">—</span>
+          <span class="conf" id="conf"></span>
+          <span class="by" id="by"></span>
+        </div>
+        <div id="gradcam"></div>
+        <div id="bars"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Aadityan Gupta · IIT Roorkee · runs on the project's <code>src/</code> pipeline · <span id="dev"></span></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let MODELS = [], file = null;
+
+async function init(){
+  const r = await fetch('/api/models').then(r=>r.json());
+  MODELS = r.models || [];
+  $('dev').textContent = r.device ? ('device: '+r.device) : '';
+  if(!MODELS.length){ $('status').textContent = r.error || 'No trained models found.'; return; }
+  $('model').innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.label}${m.acc?'  ·  '+m.acc:''}</option>`).join('');
+  renderMeta(); loadModel();
+}
+function renderMeta(){
+  const m = MODELS.find(x=>x.id===$('model').value);
+  const accChip = m.acc ? `<span class="chip">acc ${m.acc}</span>` : '';
+  $('meta').innerHTML = `<span class="chip">${m.type}</span>${accChip}<span class="chip">${m.params} params</span>`;
+}
+async function loadModel(){
+  const id = $('model').value;
+  $('status').className='status busy'; $('status').textContent='⏳ loading '+id+' …';
+  try{
+    const fd=new FormData(); fd.append('model', id);
+    await fetch('/api/load',{method:'POST',body:fd});
+    $('status').className='status ready'; $('status').textContent='✓ '+id+' ready';
+  }catch(e){ $('status').className='status'; $('status').textContent='load failed'; }
+}
+$('model').addEventListener('change', ()=>{ renderMeta(); loadModel(); clearResult(); });
+
+// ── upload handling ──
+$('drop').onclick = ()=> $('file').click();
+$('file').onchange = e => setFile(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('over');}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('over');}));
+$('drop').addEventListener('drop', e=> setFile(e.dataTransfer.files[0]));
+function setFile(f){
+  if(!f) return; file=f;
+  const url=URL.createObjectURL(f);
+  $('preview').src=url; $('preview').style.display='block';
+  $('go').disabled=false; $('err').textContent='';
+}
+function clearResult(){ $('result').style.display='none'; $('placeholder').style.display='block'; }
+
+// ── predict ──
+$('go').onclick = async ()=>{
+  if(!file) return;
+  $('err').textContent=''; $('go').disabled=true; $('go').textContent='Analyzing…';
+  try{
+    const fd=new FormData(); fd.append('model', $('model').value); fd.append('file', file);
+    const res = await fetch('/api/predict',{method:'POST',body:fd});
+    if(!res.ok){ throw new Error((await res.json()).detail || 'prediction failed'); }
+    render(await res.json());
+  }catch(e){ $('err').textContent='⚠ '+e.message; }
+  finally{ $('go').disabled=false; $('go').textContent='Analyze scan'; }
+};
+function render(r){
+  $('placeholder').style.display='none'; $('result').style.display='block';
+  $('plabel').textContent = r.pred_label;
+  $('conf').textContent = (r.confidence*100).toFixed(1)+'%';
+  $('by').textContent = 'model: '+r.model;
+  // Grad-CAM — "where the model looked"
+  const gc = $('gradcam');
+  if(r.overlay){
+    gc.innerHTML = `<div class="gclbl">🔍 Where the model looked — Grad-CAM</div>
+      <img class="gcimg" src="${r.overlay}" alt="Grad-CAM heatmap">
+      <div class="gccap">Warm colors = the regions that most drove the “${r.pred_label}” decision. The model learned this from labels alone.</div>`;
+  } else {
+    gc.innerHTML = `<div class="gcna">ℹ Grad-CAM isn't available for the classical HOG+SVM — it's not a CNN, so there are no convolutional feature maps to visualize.</div>`;
+  }
+  $('bars').innerHTML = r.scores.map((s,i)=>`
+    <div class="bar">
+      <div class="row"><span>${s.label}</span><span class="v">${(s.score*100).toFixed(1)}%</span></div>
+      <div class="track"><div class="fill ${i===0?'top':''}" data-w="${(s.score*100).toFixed(1)}"></div></div>
+    </div>`).join('');
+  requestAnimationFrame(()=> document.querySelectorAll('.fill').forEach(f=> f.style.width=f.dataset.w+'%'));
+}
+init();
+</script>
+</body>
+</html>

@@ -56,10 +56,11 @@ docs/
 build_book.py
 
 # Presentation artifacts (PDFs, HTML exports, slide previews, scripts)
-*.pdf
-*.html
 PRESENTATION_SCRIPT.md
 DEMO_README.md
 slide_previews/
 .design_tmp/
 run_demo.bat
+
+# Local-only assets (presentations, loose figures, archive, dataset zip)
+_local/
