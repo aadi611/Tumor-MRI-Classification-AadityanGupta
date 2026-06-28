@@ -3,196 +3,687 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Brain Tumor MRI Classifier — Live Demo</title>
+<title>NeuroScan AI — MRI Analysis System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  :root{--cyan:#22d3ee;--purple:#a855f7;--indigo:#6366f1;--ink:#ECEAF6;--muted:#9b97c0;--card:rgba(124,124,240,.07);--line:rgba(124,124,240,.22);}
-  body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--ink);min-height:100vh;
-    background:radial-gradient(120% 120% at 80% -10%,#241b54 0%,#0e0b22 52%,#08070f 100%);
-    background-attachment:fixed;padding:40px 20px;}
-  .wrap{max-width:1000px;margin:0 auto;}
-  header{text-align:center;margin-bottom:30px;}
-  .kicker{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.28em;
-    text-transform:uppercase;color:var(--cyan);}
-  h1{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:600;letter-spacing:-.02em;
-    margin:8px 0;background:linear-gradient(92deg,#fff 20%,#c9bdff 60%,var(--cyan));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-  .sub{color:var(--muted);font-weight:300;font-size:16px;}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:10px;}
-  @media(max-width:780px){.grid{grid-template-columns:1fr;}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;}
-  .lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--cyan);margin-bottom:12px;}
-  .step{display:inline-block;font-family:'IBM Plex Mono',monospace;background:var(--indigo);color:#fff;
-    border-radius:6px;padding:1px 8px;font-size:12px;margin-right:8px;}
-  select{width:100%;padding:14px 16px;border-radius:12px;background:#13131c;color:var(--ink);
-    border:1px solid var(--line);font-family:'IBM Plex Sans';font-size:15px;cursor:pointer;}
-  .modelmeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
-  .chip{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#cdd0ec;padding:5px 11px;border-radius:999px;
-    background:rgba(124,124,240,.12);border:1px solid rgba(124,124,240,.28);}
-  .status{margin-top:14px;font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--muted);min-height:18px;}
-  .status.ready{color:#55e6a5;} .status.busy{color:#ffd479;}
-  .drop{margin-top:6px;border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;
-    cursor:pointer;transition:.2s;background:rgba(255,255,255,.02);}
-  .drop:hover,.drop.over{border-color:var(--cyan);background:rgba(34,211,238,.06);}
-  .drop p{color:var(--muted);font-size:14px;}
-  .drop .big{font-size:34px;margin-bottom:6px;}
-  #preview{max-width:100%;max-height:260px;border-radius:10px;margin-top:14px;display:none;border:1px solid var(--line);}
-  button.go{width:100%;margin-top:16px;padding:14px;border:none;border-radius:12px;cursor:pointer;
-    font-family:'Space Grotesk';font-weight:600;font-size:16px;color:#0b0a18;
-    background:linear-gradient(92deg,var(--cyan),var(--indigo));transition:.2s;}
-  button.go:disabled{opacity:.4;cursor:not-allowed;}
-  button.go:hover:not(:disabled){filter:brightness(1.1);}
-  #result{margin-top:24px;display:none;}
-  .verdict{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
-    background:linear-gradient(135deg,rgba(34,211,238,.14),rgba(168,85,247,.08));
-    border:1px solid rgba(34,211,238,.3);border-radius:16px;padding:22px 26px;margin-bottom:18px;}
-  .verdict .plabel{font-family:'Space Grotesk';font-size:34px;font-weight:600;color:#fff;}
-  .verdict .conf{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--cyan);}
-  .verdict .by{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);}
-  .bar{margin:12px 0;}
-  .bar .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;}
-  .bar .row .v{font-family:'IBM Plex Mono',monospace;color:var(--ink);}
-  .track{height:14px;border-radius:7px;background:rgba(255,255,255,.07);overflow:hidden;}
-  .fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--indigo),var(--purple));
-    width:0;transition:width .6s ease;}
-  .fill.top{background:linear-gradient(90deg,var(--cyan),var(--indigo));}
-  #gradcam{margin:18px 0 6px;}
-  .gclbl{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.05em;color:var(--cyan);margin-bottom:8px;}
-  .gcimg{width:100%;max-width:300px;border-radius:12px;border:1px solid var(--line);display:block;
-    box-shadow:0 10px 30px rgba(0,0,0,.35);}
-  .gccap{font-size:12px;color:var(--muted);margin-top:7px;font-style:italic;max-width:300px;}
-  .gcna{font-size:13px;color:var(--muted);font-family:'IBM Plex Mono',monospace;padding:8px 0;}
-  .err{color:#ff8a8a;font-size:14px;margin-top:12px;font-family:'IBM Plex Mono',monospace;}
-  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;font-family:'IBM Plex Mono',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#07090d;--surface:#0b0f15;--card:#0f1520;--card2:#121a28;
+  --border:rgba(0,200,140,.13);--border2:rgba(0,200,140,.25);
+  --green:#00d49c;--blue:#4da6ff;--amber:#f5a623;--red:#ff5566;--purple:#a78bfa;
+  --text:#cce8de;--muted:#4a6a60;--dim:#2a4a40;
+  --mono:'IBM Plex Mono',monospace;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:14px;line-height:1.5;}
+
+/* ── System bar ── */
+.sysbar{background:#060810;border-bottom:1px solid var(--border);
+  padding:0 20px;height:40px;display:flex;align-items:center;gap:0;
+  font-family:var(--mono);font-size:11px;color:var(--muted);position:sticky;top:0;z-index:100;}
+.sysbar .brand{color:var(--green);font-weight:500;letter-spacing:.08em;margin-right:20px;font-size:12px;}
+.sysbar .seg{padding:0 14px;border-right:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.sysbar .seg:last-child{border-right:none;margin-left:auto;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.green{background:var(--green);box-shadow:0 0 5px var(--green);}
+.dot.amber{background:var(--amber);}
+.dot.red{background:var(--red);}
+.sysbar .val{color:var(--text);}
+
+/* ── Warning banner ── */
+.warn-banner{background:rgba(245,166,35,.08);border-bottom:1px solid rgba(245,166,35,.25);
+  padding:7px 20px;font-size:11px;font-family:var(--mono);color:var(--amber);
+  display:flex;align-items:center;gap:10px;}
+.warn-banner svg{flex-shrink:0;}
+
+/* ── Main layout ── */
+.workspace{display:grid;grid-template-columns:290px 370px 1fr;gap:0;min-height:calc(100vh - 40px - 34px);}
+
+/* ── Panels ── */
+.panel{border-right:1px solid var(--border);padding:0;overflow-y:auto;}
+.panel:last-child{border-right:none;}
+.panel-hd{padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);}
+.panel-hd .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);padding:2px 7px;
+  border:1px solid var(--border);border-radius:3px;}
+.panel-hd .title{font-family:var(--mono);font-size:12px;color:var(--green);font-weight:500;}
+.panel-body{padding:16px;}
+
+/* ── Section headers inside panels ── */
+.sec-hd{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.sec-hd::after{content:'';flex:1;height:1px;background:var(--border);}
+.mb{margin-bottom:18px;}
+
+/* ── Model selector ── */
+select{width:100%;padding:9px 12px;background:var(--card);color:var(--text);
+  border:1px solid var(--border);border-radius:6px;font-family:'IBM Plex Sans';
+  font-size:13px;cursor:pointer;outline:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a6a60' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;}
+select:focus{border-color:var(--green);}
+select option{background:#0f1520;}
+
+/* ── Spec table ── */
+.spec-table{width:100%;border-collapse:collapse;font-size:12px;}
+.spec-table td{padding:6px 0;border-bottom:1px solid rgba(0,200,140,.06);vertical-align:top;}
+.spec-table td:first-child{color:var(--muted);font-family:var(--mono);font-size:11px;
+  padding-right:12px;white-space:nowrap;width:50%;}
+.spec-table td:last-child{color:var(--text);font-family:var(--mono);font-size:12px;text-align:right;}
+.spec-table .good{color:var(--green);}
+.spec-table .ok{color:var(--blue);}
+.spec-table .warn{color:var(--amber);}
+
+/* ── Status pill ── */
+.status-row{display:flex;align-items:center;gap:8px;margin-top:12px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);min-height:20px;}
+.status-row .dot{flex-shrink:0;}
+#modelStatus{color:var(--muted);}
+#modelStatus.ready{color:var(--green);}
+#modelStatus.busy{color:var(--amber);}
+#modelStatus.error{color:var(--red);}
+
+/* ── Pipeline steps ── */
+.pipeline{display:flex;flex-direction:column;gap:6px;}
+.pipe-step{display:flex;align-items:center;gap:10px;padding:7px 10px;
+  border:1px solid var(--border);border-radius:6px;background:var(--card);
+  font-size:11px;font-family:var(--mono);color:var(--muted);transition:.3s;}
+.pipe-step.active{border-color:var(--green);color:var(--green);background:rgba(0,212,156,.06);}
+.pipe-step.done{border-color:rgba(0,212,156,.3);color:rgba(0,212,156,.6);}
+.pipe-icon{width:18px;height:18px;border-radius:50%;border:1px solid currentColor;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
+.pipe-step.done .pipe-icon::after{content:'✓';}
+.pipe-step.active .pipe-icon::after{content:'◉';}
+.pipe-step:not(.active):not(.done) .pipe-icon::after{content:'○';}
+
+/* ── Upload zone ── */
+.drop-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:22px 16px;
+  text-align:center;cursor:pointer;transition:.2s;background:rgba(0,0,0,.2);}
+.drop-zone:hover,.drop-zone.over{border-color:var(--green);background:rgba(0,212,156,.04);}
+.drop-zone .dz-icon{font-size:28px;margin-bottom:8px;opacity:.6;}
+.drop-zone p{font-size:12px;color:var(--muted);line-height:1.6;}
+.drop-zone b{color:var(--text);}
+input[type=file]{display:none;}
+
+/* ── Preview card ── */
+#previewCard{display:none;margin-top:12px;background:var(--card);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+#previewCard img{width:100%;max-height:200px;object-fit:contain;display:block;background:#000;}
+.preview-meta{padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);
+  display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid var(--border);}
+.preview-meta span{color:var(--text);}
+
+/* ── Run button ── */
+.btn-run{width:100%;margin-top:14px;padding:11px;border:1.5px solid var(--green);
+  border-radius:7px;cursor:pointer;font-family:'Space Grotesk';font-weight:600;
+  font-size:14px;color:var(--bg);background:var(--green);transition:.2s;letter-spacing:.02em;}
+.btn-run:disabled{opacity:.35;cursor:not-allowed;background:transparent;color:var(--green);}
+.btn-run:hover:not(:disabled){filter:brightness(1.12);}
+
+/* ── Error ── */
+.err-msg{font-family:var(--mono);font-size:11px;color:var(--red);margin-top:8px;min-height:16px;}
+
+/* ── Results panel ── */
+#placeholder{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;line-height:2;}
+#placeholder .ph-icon{font-size:36px;margin-bottom:12px;opacity:.25;}
+
+/* Verdict box */
+.verdict-box{background:var(--card2);border:1px solid var(--border2);border-radius:10px;
+  padding:18px 20px;margin-bottom:16px;}
+.verdict-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.verdict-class{font-family:'Space Grotesk';font-size:30px;font-weight:700;
+  color:var(--green);letter-spacing:-.02em;margin-bottom:4px;}
+.verdict-conf{font-family:var(--mono);font-size:18px;color:var(--text);}
+.verdict-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+.calibration-note{font-family:var(--mono);font-size:10px;color:var(--muted);
+  margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* Score bars */
+.score-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.score-item{}
+.score-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;}
+.score-row .cls{color:var(--text);font-weight:500;}
+.score-row .pct{font-family:var(--mono);color:var(--muted);}
+.score-row .pct.top{color:var(--green);}
+.track{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.fill{height:100%;border-radius:3px;background:var(--muted);width:0;transition:width .7s cubic-bezier(.4,0,.2,1);}
+.fill.top{background:var(--green);}
+
+/* Grad-CAM */
+.gc-block{margin-bottom:16px;}
+.gc-hd{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.gc-hd::after{content:'';flex:1;height:1px;background:var(--border);}
+.gc-img{width:100%;max-width:280px;border-radius:8px;border:1px solid var(--border);display:block;}
+.gc-caption{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;}
+.gc-na{font-family:var(--mono);font-size:11px;color:var(--muted);padding:10px;
+  background:var(--card);border-radius:6px;border:1px solid var(--border);}
+
+/* Inference meta grid */
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.meta-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px 12px;}
+.meta-card .mk{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.meta-card .mv{font-family:var(--mono);font-size:14px;color:var(--text);font-weight:500;}
+.meta-card .mv.green{color:var(--green);}
+.meta-card .mv.blue{color:var(--blue);}
+.meta-card .mv.amber{color:var(--amber);}
+
+/* ── Log panel ── */
+.log-panel{border-top:1px solid var(--border);background:#060810;}
+.log-hd{padding:8px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.log-hd .log-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);}
+.log-body{font-family:var(--mono);font-size:11px;padding:8px 16px;height:100px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
+.log-line{display:flex;gap:10px;opacity:.9;}
+.log-line .lt{color:var(--dim);flex-shrink:0;min-width:54px;}
+.log-line .lm{color:var(--muted);}
+.log-line .lm.ok{color:var(--green);}
+.log-line .lm.warn{color:var(--amber);}
+.log-line .lm.info{color:var(--blue);}
+.log-line .lm.err{color:var(--red);}
+
+/* ── Footer ── */
+footer{background:#060810;border-top:1px solid var(--border);padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+footer .fl{font-family:var(--mono);font-size:10px;color:var(--muted);}
+footer .fr{font-family:var(--mono);font-size:10px;color:var(--dim);}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+
+/* ── Spinner ── */
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinner{width:10px;height:10px;border:1.5px solid var(--dim);
+  border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+
+@media(max-width:900px){
+  .workspace{grid-template-columns:1fr;}
+  .panel{border-right:none;border-bottom:1px solid var(--border);}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="kicker">Capstone · Live Demo</div>
-    <h1>Brain Tumor MRI Classifier</h1>
-    <div class="sub">Pick a model · upload an MRI · see the predicted tumour type and per-class scores</div>
-  </header>
 
-  <div class="grid">
-    <!-- LEFT: model + upload -->
-    <div class="card">
-      <div class="lbl"><span class="step">1</span> Choose a model</div>
-      <select id="model"></select>
-      <div class="modelmeta" id="meta"></div>
-      <div class="status" id="status">Loading model list…</div>
+<!-- ── System bar ── -->
+<header class="sysbar">
+  <span class="brand">NEUROSCAN AI</span>
+  <div class="seg"><div class="dot green" id="sysDot"></div><span>SYS</span><span class="val" id="sysState">READY</span></div>
+  <div class="seg"><span>SESSION</span><span class="val" id="sessionId">—</span></div>
+  <div class="seg"><span>DEVICE</span><span class="val" id="sysDevice">—</span></div>
+  <div class="seg"><span>INFERENCES</span><span class="val" id="infCount">0</span></div>
+  <div class="seg"><span id="sysClock">—</span></div>
+</header>
 
-      <div class="lbl" style="margin-top:24px;"><span class="step">2</span> Upload an MRI scan</div>
-      <div class="drop" id="drop">
-        <div class="big">🧠</div>
-        <p><b>Click to choose</b> or drag &amp; drop a brain-MRI image</p>
-        <p style="font-size:12px;margin-top:4px;">JPG / PNG</p>
-      </div>
-      <input type="file" id="file" accept="image/*" hidden>
-      <img id="preview" alt="preview">
-      <button class="go" id="go" disabled>Analyze scan</button>
-      <div class="err" id="err"></div>
-    </div>
-
-    <!-- RIGHT: result -->
-    <div class="card">
-      <div class="lbl"><span class="step">3</span> Result</div>
-      <div id="placeholder" style="color:var(--muted);font-weight:300;font-size:15px;padding:30px 0;text-align:center;">
-        Your prediction will appear here once you upload a scan and hit <b>Analyze</b>.
-      </div>
-      <div id="result">
-        <div class="verdict">
-          <span class="plabel" id="plabel">—</span>
-          <span class="conf" id="conf"></span>
-          <span class="by" id="by"></span>
-        </div>
-        <div id="gradcam"></div>
-        <div id="bars"></div>
-      </div>
-    </div>
-  </div>
-
-  <footer>Aadityan Gupta · IIT Roorkee · runs on the project's <code>src/</code> pipeline · <span id="dev"></span></footer>
+<!-- ── Warning banner ── -->
+<div class="warn-banner">
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <path d="M8 1L15 14H1L8 1z" stroke="#f5a623" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M8 6v4M8 11.5v.5" stroke="#f5a623" stroke-width="1.4" stroke-linecap="round"/>
+  </svg>
+  FOR RESEARCH AND EDUCATIONAL USE ONLY — NOT VALIDATED FOR CLINICAL DIAGNOSTIC DECISIONS.
+  All model outputs must be reviewed by a qualified medical professional.
 </div>
+
+<!-- ── Main workspace ── -->
+<div class="workspace">
+
+  <!-- ════ LEFT: Model Configuration ════ -->
+  <aside class="panel">
+    <div class="panel-hd">
+      <span class="tag">01</span>
+      <span class="title">Model Configuration</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="mb">
+        <div class="sec-hd">Architecture Selection</div>
+        <select id="modelSelect"></select>
+        <div class="status-row">
+          <div class="dot" id="modelDot"></div>
+          <span id="modelStatus">waiting for model list…</span>
+        </div>
+      </div>
+
+      <div class="mb">
+        <div class="sec-hd">Model Specifications</div>
+        <table class="spec-table" id="specTable">
+          <tr><td>Type</td><td id="sp-type">—</td></tr>
+          <tr><td>Parameters</td><td id="sp-params">—</td></tr>
+          <tr><td>Training</td><td id="sp-protocol">—</td></tr>
+          <tr><td>Input size</td><td id="sp-input">—</td></tr>
+          <tr><td>Accuracy</td><td id="sp-acc" class="good">—</td></tr>
+          <tr><td>Macro F1</td><td id="sp-f1" class="good">—</td></tr>
+          <tr><td>ROC-AUC</td><td id="sp-auc" class="ok">—</td></tr>
+          <tr><td>ECE (cal.)</td><td id="sp-ece">—</td></tr>
+          <tr><td>Latency</td><td id="sp-lat">—</td></tr>
+          <tr><td>Explainable</td><td id="sp-xai">—</td></tr>
+        </table>
+      </div>
+
+      <div class="mb">
+        <div class="sec-hd">Preprocessing Pipeline</div>
+        <div class="pipeline">
+          <div class="pipe-step" id="pipe-load">
+            <div class="pipe-icon"></div><span>Image load &amp; decode</span>
+          </div>
+          <div class="pipe-step" id="pipe-crop">
+            <div class="pipe-icon"></div><span>Otsu brain-region crop</span>
+          </div>
+          <div class="pipe-step" id="pipe-clahe">
+            <div class="pipe-icon"></div><span>CLAHE contrast (L-ch)</span>
+          </div>
+          <div class="pipe-step" id="pipe-resize">
+            <div class="pipe-icon"></div><span>Resize → 224 × 224</span>
+          </div>
+          <div class="pipe-step" id="pipe-norm">
+            <div class="pipe-icon"></div><span>ImageNet normalisation</span>
+          </div>
+          <div class="pipe-step" id="pipe-infer">
+            <div class="pipe-icon"></div><span>Model forward pass</span>
+          </div>
+          <div class="pipe-step" id="pipe-grad">
+            <div class="pipe-icon"></div><span>Grad-CAM backward pass</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sec-hd">Classes</div>
+        <table class="spec-table">
+          <tr><td>Glioma</td><td class="warn">Intra-axial, infiltrative</td></tr>
+          <tr><td>Meningioma</td><td class="ok">Extra-axial, dural</td></tr>
+          <tr><td>Pituitary</td><td class="ok">Sella turcica, midline</td></tr>
+          <tr><td>No Tumor</td><td class="good">Normal parenchyma</td></tr>
+        </table>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ════ CENTER: Scan Input ════ -->
+  <section class="panel">
+    <div class="panel-hd">
+      <span class="tag">02</span>
+      <span class="title">Scan Input</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="mb">
+        <div class="sec-hd">Upload MRI Scan</div>
+        <div class="drop-zone" id="dropZone">
+          <div class="dz-icon">⬡</div>
+          <p><b>Click to choose</b> or drag &amp; drop</p>
+          <p>T1 / T2 / FLAIR — JPEG or PNG</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div id="previewCard">
+          <img id="previewImg" alt="MRI preview">
+          <div class="preview-meta" id="previewMeta"></div>
+        </div>
+      </div>
+
+      <div class="mb">
+        <div class="sec-hd">Scan Metadata</div>
+        <table class="spec-table" id="scanMeta">
+          <tr><td>Filename</td><td id="sm-name">—</td></tr>
+          <tr><td>Size</td><td id="sm-size">—</td></tr>
+          <tr><td>Dimensions</td><td id="sm-dim">—</td></tr>
+          <tr><td>Format</td><td id="sm-fmt">—</td></tr>
+          <tr><td>Colour space</td><td id="sm-cs">—</td></tr>
+        </table>
+      </div>
+
+      <button class="btn-run" id="btnRun" disabled>Run Analysis</button>
+      <div class="err-msg" id="errMsg"></div>
+
+    </div>
+  </section>
+
+  <!-- ════ RIGHT: Analysis Results ════ -->
+  <section class="panel">
+    <div class="panel-hd">
+      <span class="tag">03</span>
+      <span class="title">Analysis Output</span>
+    </div>
+    <div class="panel-body" id="resultsBody">
+
+      <div id="placeholder">
+        <div class="ph-icon">◎</div>
+        <div>Select a model, upload a brain MRI scan,<br>and press <strong>Run Analysis</strong> to begin.</div>
+      </div>
+
+      <div id="resultPanel" style="display:none">
+
+        <!-- Verdict -->
+        <div class="verdict-box">
+          <div class="verdict-label">Primary classification</div>
+          <div class="verdict-row">
+            <div class="verdict-class" id="rClass">—</div>
+            <div class="verdict-conf" id="rConf"></div>
+          </div>
+          <div class="calibration-note" id="rCalib"></div>
+        </div>
+
+        <!-- Score bars -->
+        <div class="mb">
+          <div class="sec-hd">Class probability distribution</div>
+          <div class="score-list" id="scoreBars"></div>
+        </div>
+
+        <!-- Grad-CAM -->
+        <div class="gc-block mb" id="gcBlock"></div>
+
+        <!-- Inference metadata -->
+        <div class="mb">
+          <div class="sec-hd">Inference metadata</div>
+          <div class="meta-grid" id="metaGrid"></div>
+        </div>
+
+        <!-- Attention anatomy note -->
+        <div id="anatomyNote" style="display:none;margin-bottom:16px;">
+          <div class="sec-hd">Attention anatomy</div>
+          <table class="spec-table" id="anatomyTable"></table>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Log panel ── -->
+<div class="log-panel">
+  <div class="log-hd">
+    <span class="log-title">System Log</span>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-left:auto;">scroll to review</div>
+  </div>
+  <div class="log-body" id="logBody"></div>
+</div>
+
+<footer>
+  <span class="fl">Aadityan Gupta · IIT Roorkee · Protocol B (stratified 70/15/15 re-split)</span>
+  <span class="fr">pipeline: src/preprocessing → src/models → Grad-CAM · v2.0</span>
+</footer>
 
 <script>
 const $ = id => document.getElementById(id);
-let MODELS = [], file = null;
+
+/* ── Metadata for each model (Protocol B results) ── */
+const MODEL_META = {
+  custom_cnn:      {protocol:'From scratch, 100 ep',input:'256×256',acc:'0.904',f1:'0.906',auc:'0.988',ece:'0.050',lat:'~4 ms',xai:'Yes — Grad-CAM'},
+  resnet50:        {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.894',f1:'0.903',auc:'0.988',ece:'0.037',lat:'~3 ms',xai:'Yes — Grad-CAM'},
+  efficientnet_b0: {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.890',f1:'0.900',auc:'0.982',ece:'0.045',lat:'~2 ms',xai:'Yes — Grad-CAM'},
+  densenet121:     {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.887',f1:'0.895',auc:'0.981',ece:'0.048',lat:'~4 ms',xai:'Yes — Grad-CAM'},
+  vgg16:           {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.872',f1:'0.877',auc:'0.975',ece:'0.062',lat:'~8 ms',xai:'Yes — Grad-CAM'},
+  svm_hog:         {protocol:'Classical ML',       input:'128×128 gray',acc:'0.772',f1:'0.728',auc:'0.946',ece:'N/A',lat:'~0.3 ms',xai:'No (not a CNN)'},
+};
+
+const ANATOMY = {
+  'Glioma':     'Infiltrating mass, frontal / temporal lobes, irregular margins, perilesional oedema',
+  'Meningioma': 'Extra-axial, dural tail sign, uniform enhancement adjacent to falx / convexity',
+  'Pituitary':  'Sella turcica, pituitary fossa, midline — adenoma or macroadenoma pattern',
+  'No Tumor':   'No focal lesion; attention diffuse over normal parenchyma and sulcal patterns',
+};
+
+/* ── Session setup ── */
+const SESSION_ID = Math.random().toString(16).slice(2,10).toUpperCase();
+$('sessionId').textContent = SESSION_ID;
+let infCount = 0;
+
+/* ── Clock ── */
+function tick(){
+  const now = new Date();
+  $('sysClock').textContent = now.toISOString().replace('T',' ').slice(0,19)+' UTC';
+}
+tick(); setInterval(tick, 1000);
+
+/* ── Log ── */
+function log(msg, cls=''){
+  const ts = new Date().toISOString().slice(11,23);
+  const el = document.createElement('div');
+  el.className = 'log-line';
+  el.innerHTML = `<span class="lt">${ts}</span><span class="lm ${cls}">${msg}</span>`;
+  const lb = $('logBody');
+  lb.appendChild(el);
+  lb.scrollTop = lb.scrollHeight;
+}
+
+/* ── Pipeline step helpers ── */
+const PIPES = ['load','crop','clahe','resize','norm','infer','grad'];
+function pipeReset(){PIPES.forEach(p=>{const el=$('pipe-'+p);el.classList.remove('active','done');});}
+function pipeActive(id){$('pipe-'+id).classList.add('active');}
+function pipeDone(id){const el=$('pipe-'+id);el.classList.remove('active');el.classList.add('done');}
+
+/* ── Model list ── */
+let MODELS=[], currentModel=null, file=null;
 
 async function init(){
-  const r = await fetch('/api/models').then(r=>r.json());
-  MODELS = r.models || [];
-  $('dev').textContent = r.device ? ('device: '+r.device) : '';
-  if(!MODELS.length){ $('status').textContent = r.error || 'No trained models found.'; return; }
-  $('model').innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.label}${m.acc?'  ·  '+m.acc:''}</option>`).join('');
-  renderMeta(); loadModel();
-}
-function renderMeta(){
-  const m = MODELS.find(x=>x.id===$('model').value);
-  const accChip = m.acc ? `<span class="chip">acc ${m.acc}</span>` : '';
-  $('meta').innerHTML = `<span class="chip">${m.type}</span>${accChip}<span class="chip">${m.params} params</span>`;
-}
-async function loadModel(){
-  const id = $('model').value;
-  $('status').className='status busy'; $('status').textContent='⏳ loading '+id+' …';
+  log('Initialising NeuroScan AI — session '+SESSION_ID,'info');
   try{
-    const fd=new FormData(); fd.append('model', id);
-    await fetch('/api/load',{method:'POST',body:fd});
-    $('status').className='status ready'; $('status').textContent='✓ '+id+' ready';
-  }catch(e){ $('status').className='status'; $('status').textContent='load failed'; }
+    const r = await fetch('/api/models').then(r=>r.json());
+    MODELS = r.models||[];
+    $('sysDevice').textContent = (r.device||'cpu').toUpperCase();
+    if(!MODELS.length){
+      log('No trained checkpoints found in models/','warn');
+      $('modelStatus').textContent='No models found'; $('modelStatus').className='error';
+      return;
+    }
+    log(`Found ${MODELS.length} model checkpoint(s)`,'ok');
+    $('modelSelect').innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
+    renderSpecs(); loadModel();
+  }catch(e){
+    log('Failed to reach /api/models — is uvicorn running?','err');
+  }
 }
-$('model').addEventListener('change', ()=>{ renderMeta(); loadModel(); clearResult(); });
 
-// ── upload handling ──
-$('drop').onclick = ()=> $('file').click();
-$('file').onchange = e => setFile(e.target.files[0]);
-['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('over');}));
-['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('over');}));
-$('drop').addEventListener('drop', e=> setFile(e.dataTransfer.files[0]));
+function renderSpecs(){
+  const m = MODELS.find(x=>x.id===$('modelSelect').value);
+  if(!m) return;
+  currentModel=m;
+  const ex = MODEL_META[m.id]||{};
+  $('sp-type').textContent    = m.type||'—';
+  $('sp-params').textContent  = m.params||'—';
+  $('sp-protocol').textContent= ex.protocol||'—';
+  $('sp-input').textContent   = ex.input||'—';
+  $('sp-acc').textContent     = ex.acc ? ex.acc : '—';
+  $('sp-f1').textContent      = ex.f1  ? ex.f1  : '—';
+  $('sp-auc').textContent     = ex.auc ? ex.auc : '—';
+  $('sp-ece').textContent     = ex.ece||'—';
+  $('sp-lat').textContent     = ex.lat||'—';
+  $('sp-xai').textContent     = ex.xai||'—';
+}
+
+async function loadModel(){
+  const id = $('modelSelect').value;
+  setModelStatus('busy','Loading '+id+' …');
+  log('Loading checkpoint: '+id);
+  try{
+    const fd=new FormData(); fd.append('model',id);
+    await fetch('/api/load',{method:'POST',body:fd});
+    setModelStatus('ready',id+' ready');
+    log('Model ready: '+id,'ok');
+  }catch(e){
+    setModelStatus('error','Load failed'); log('Load error: '+e.message,'err');
+  }
+}
+
+function setModelStatus(cls,txt){
+  $('modelStatus').className = cls;
+  $('modelStatus').textContent = txt;
+  $('modelDot').className = 'dot '+(cls==='ready'?'green':cls==='busy'?'amber':'red');
+}
+
+$('modelSelect').addEventListener('change',()=>{ renderSpecs(); loadModel(); clearResult(); });
+
+/* ── File handling ── */
+$('dropZone').onclick = ()=>$('fileInput').click();
+$('fileInput').onchange = e=>setFile(e.target.files[0]);
+['dragover','dragenter'].forEach(ev=>$('dropZone').addEventListener(ev,e=>{e.preventDefault();$('dropZone').classList.add('over');}));
+['dragleave','drop'].forEach(ev=>$('dropZone').addEventListener(ev,e=>{e.preventDefault();$('dropZone').classList.remove('over');}));
+$('dropZone').addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
+
 function setFile(f){
   if(!f) return; file=f;
   const url=URL.createObjectURL(f);
-  $('preview').src=url; $('preview').style.display='block';
-  $('go').disabled=false; $('err').textContent='';
-}
-function clearResult(){ $('result').style.display='none'; $('placeholder').style.display='block'; }
+  $('previewImg').src=url;
+  $('previewCard').style.display='block';
+  $('btnRun').disabled=false;
+  $('errMsg').textContent='';
 
-// ── predict ──
-$('go').onclick = async ()=>{
-  if(!file) return;
-  $('err').textContent=''; $('go').disabled=true; $('go').textContent='Analyzing…';
-  try{
-    const fd=new FormData(); fd.append('model', $('model').value); fd.append('file', file);
-    const res = await fetch('/api/predict',{method:'POST',body:fd});
-    if(!res.ok){ throw new Error((await res.json()).detail || 'prediction failed'); }
-    render(await res.json());
-  }catch(e){ $('err').textContent='⚠ '+e.message; }
-  finally{ $('go').disabled=false; $('go').textContent='Analyze scan'; }
-};
-function render(r){
-  $('placeholder').style.display='none'; $('result').style.display='block';
-  $('plabel').textContent = r.pred_label;
-  $('conf').textContent = (r.confidence*100).toFixed(1)+'%';
-  $('by').textContent = 'model: '+r.model;
-  // Grad-CAM — "where the model looked"
-  const gc = $('gradcam');
-  if(r.overlay){
-    gc.innerHTML = `<div class="gclbl">🔍 Where the model looked — Grad-CAM</div>
-      <img class="gcimg" src="${r.overlay}" alt="Grad-CAM heatmap">
-      <div class="gccap">Warm colors = the regions that most drove the “${r.pred_label}” decision. The model learned this from labels alone.</div>`;
-  } else {
-    gc.innerHTML = `<div class="gcna">ℹ Grad-CAM isn't available for the classical HOG+SVM — it's not a CNN, so there are no convolutional feature maps to visualize.</div>`;
-  }
-  $('bars').innerHTML = r.scores.map((s,i)=>`
-    <div class="bar">
-      <div class="row"><span>${s.label}</span><span class="v">${(s.score*100).toFixed(1)}%</span></div>
-      <div class="track"><div class="fill ${i===0?'top':''}" data-w="${(s.score*100).toFixed(1)}"></div></div>
-    </div>`).join('');
-  requestAnimationFrame(()=> document.querySelectorAll('.fill').forEach(f=> f.style.width=f.dataset.w+'%'));
+  /* Scan metadata */
+  $('sm-name').textContent = f.name.length>22 ? f.name.slice(0,19)+'…' : f.name;
+  $('sm-size').textContent = (f.size/1024).toFixed(1)+' KB';
+  $('sm-fmt').textContent  = f.type||f.name.split('.').pop().toUpperCase();
+  $('sm-cs').textContent   = 'RGB (pipeline converts to LAB for CLAHE)';
+
+  /* Read actual pixel dimensions */
+  const img=new Image();
+  img.onload=()=>{ $('sm-dim').textContent=img.naturalWidth+' × '+img.naturalHeight+' px'; };
+  img.src=url;
+
+  log(`Scan loaded: ${f.name} (${(f.size/1024).toFixed(1)} KB)`);
 }
+
+/* ── Predict ── */
+$('btnRun').onclick = async()=>{
+  if(!file) return;
+  $('errMsg').textContent=''; $('btnRun').disabled=true;
+  $('btnRun').textContent='Analysing…';
+  setSysState('busy');
+  pipeReset(); clearResult();
+
+  const steps = [
+    ['load',  'Decoding image bytes into PIL RGB'],
+    ['crop',  'Applying Otsu brain-region crop'],
+    ['clahe', 'CLAHE on L-channel (clip 2.0, grid 8×8)'],
+    ['resize','Resizing to model input resolution'],
+    ['norm',  'Applying ImageNet μ/σ normalisation'],
+    ['infer', 'Running model forward pass ('+($('modelSelect').value)+')'],
+    ['grad',  'Computing Grad-CAM via backward hooks'],
+  ];
+
+  /* Animate pipeline steps with staggered timing */
+  let stepIdx=0;
+  const stepTimer = setInterval(()=>{
+    if(stepIdx>0) pipeDone(steps[stepIdx-1][0]);
+    if(stepIdx<steps.length){
+      pipeActive(steps[stepIdx][0]);
+      log(steps[stepIdx][1]);
+      stepIdx++;
+    } else { clearInterval(stepTimer); }
+  }, 250);
+
+  const t0=performance.now();
+  try{
+    const fd=new FormData();
+    fd.append('model',$('modelSelect').value); fd.append('file',file);
+    const res = await fetch('/api/predict',{method:'POST',body:fd});
+    if(!res.ok){ throw new Error((await res.json()).detail||'prediction failed'); }
+    const data = await res.json();
+    const elapsed = (performance.now()-t0).toFixed(0);
+
+    clearInterval(stepTimer);
+    PIPES.forEach(p=>pipeDone(p));
+
+    infCount++;
+    $('infCount').textContent = infCount;
+    log(`Inference complete — ${elapsed} ms round-trip`,'ok');
+    render(data, elapsed);
+  }catch(e){
+    clearInterval(stepTimer); pipeReset();
+    $('errMsg').textContent='Error: '+e.message;
+    log('Prediction failed: '+e.message,'err');
+  }finally{
+    $('btnRun').disabled=false;
+    $('btnRun').textContent='Run Analysis';
+    setSysState('ready');
+  }
+};
+
+function setSysState(s){
+  $('sysState').textContent = s==='busy' ? 'PROCESSING' : 'READY';
+  $('sysDot').className = 'dot '+(s==='busy'?'amber':'green');
+}
+
+function clearResult(){
+  $('placeholder').style.display='block';
+  $('resultPanel').style.display='none';
+}
+
+/* ── Render results ── */
+function render(r, ms){
+  $('placeholder').style.display='none';
+  $('resultPanel').style.display='block';
+
+  const pct = (r.confidence*100).toFixed(1);
+  $('rClass').textContent = r.pred_label;
+  $('rConf').textContent  = pct+'%';
+
+  /* Confidence annotation */
+  const level = r.confidence>=.90 ? 'High confidence' : r.confidence>=.70 ? 'Moderate confidence' : 'Low confidence — review carefully';
+  const ece   = MODEL_META[r.model]?.ece || '—';
+  $('rCalib').innerHTML = `${level} · ECE (calibrated) = ${ece} · model: ${r.model}`;
+
+  /* Score bars */
+  const bl = $('scoreBars');
+  bl.innerHTML='';
+  r.scores.forEach((s,i)=>{
+    const top = i===0;
+    const v = (s.score*100).toFixed(1);
+    bl.innerHTML += `
+      <div class="score-item">
+        <div class="score-row">
+          <span class="cls">${s.label}</span>
+          <span class="pct ${top?'top':''}">${v}%</span>
+        </div>
+        <div class="track"><div class="fill ${top?'top':''}" data-w="${v}"></div></div>
+      </div>`;
+  });
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%');
+  });
+
+  /* Grad-CAM */
+  const gc=$('gcBlock');
+  if(r.overlay){
+    gc.innerHTML=`
+      <div class="gc-hd">Grad-CAM attention map</div>
+      <img class="gc-img" src="${r.overlay}" alt="Grad-CAM heatmap">
+      <div class="gc-caption">
+        Warm regions = areas with highest gradient magnitude toward the predicted class.<br>
+        Method: last Conv2d forward/backward hooks → α<sub>c</sub> = GAP(∂y<sub>c</sub>/∂A<sup>k</sup>) → ReLU(Σ α<sub>c</sub>·A<sup>k</sup>).
+      </div>`;
+    /* Anatomy note */
+    $('anatomyNote').style.display='block';
+    $('anatomyTable').innerHTML=`
+      <tr><td>${r.pred_label}</td><td>${ANATOMY[r.pred_label]||'—'}</td></tr>`;
+    log('Grad-CAM overlay generated for class: '+r.pred_label,'ok');
+  } else {
+    gc.innerHTML=`<div class="gc-na">Grad-CAM not applicable — HOG+SVM is a linear classifier with no convolutional feature maps. Spatial explanations are not available for this model type.</div>`;
+    $('anatomyNote').style.display='none';
+  }
+
+  /* Inference metadata cards */
+  const ex=MODEL_META[r.model]||{};
+  $('metaGrid').innerHTML=`
+    <div class="meta-card"><div class="mk">Round-trip</div><div class="mv blue">${ms} ms</div></div>
+    <div class="meta-card"><div class="mk">Device</div><div class="mv">${(r.device||'cpu').toUpperCase()}</div></div>
+    <div class="meta-card"><div class="mk">Architecture</div><div class="mv">${r.model}</div></div>
+    <div class="meta-card"><div class="mk">Params</div><div class="mv">${ex.params||currentModel?.params||'—'}</div></div>
+    <div class="meta-card"><div class="mk">Protocol B Acc</div><div class="mv green">${ex.acc||'—'}</div></div>
+    <div class="meta-card"><div class="mk">Protocol B F1</div><div class="mv green">${ex.f1||'—'}</div></div>
+  `;
+
+  log(`Result: ${r.pred_label} (${(r.confidence*100).toFixed(1)}%) via ${r.model}`,'ok');
+}
+
 init();
 </script>
 </body>

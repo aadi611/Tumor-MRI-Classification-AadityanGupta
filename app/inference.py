@@ -60,7 +60,7 @@ SVM_FILES = ("svm_model.pkl", "svm_scaler.pkl", "label_encoder.pkl")
 
 # Display metadata for the dropdown (Protocol-B stratified test results).
 META = {
-    "custom_cnn":      {"label": "Custom CNN — from scratch ★",     "type": "From scratch",       "params": "11.3M"},
+    "custom_cnn":      {"label": "Custom CNN — from scratch ★",     "type": "From scratch",       "params": "22M"},
     "resnet50":        {"label": "ResNet-50 — transfer",            "type": "Transfer learning", "params": "23.8M"},
     "efficientnet_b0": {"label": "EfficientNet-B0 — efficient ◆",   "type": "Transfer learning", "params": "4.4M"},
     "vgg16":           {"label": "VGG-16 — dominated ▼",            "type": "Transfer learning", "params": "134.6M"},
