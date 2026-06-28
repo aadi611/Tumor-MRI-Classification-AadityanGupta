@@ -56,8 +56,10 @@ def build_transforms(cfg: Config) -> Tuple[Callable, Callable]:
         transforms.RandomRotation(cfg.aug_rotation_deg),
         transforms.RandomAffine(degrees=0, translate=(cfg.aug_translate, cfg.aug_translate)),
         transforms.ColorJitter(brightness=cfg.aug_brightness, contrast=cfg.aug_contrast),
+        transforms.RandomGrayscale(p=0.05),   # rare channel-drop; MRI is near-grayscale anyway
         transforms.ToTensor(),
         normalize,
+        transforms.RandomErasing(p=0.25, scale=(0.02, 0.15), ratio=(0.3, 3.0), value=0),
     ])
 
     eval_tf = transforms.Compose([

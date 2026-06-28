@@ -45,7 +45,7 @@ class Config:
     seed: int = 42
 
     # ── Data ────────────────────────────────────────────────────────────
-    img_size: int = 224                 # input resolution fed to the network
+    img_size: int = 256                 # 256 for custom_cnn; 224 for transfer models
     batch_size: int = 32
     num_workers: int = 0                # 0 is safest on Windows (no fork)
     val_split: float = 0.15             # fraction of TRAIN used for validation
@@ -65,14 +65,21 @@ class Config:
     clahe_grid: Tuple[int, int] = (8, 8)
 
     # ── Augmentation (medical-imaging safe) ────────────────────────────
-    aug_rotation_deg: int = 15          # small only — anatomy must stay plausible
-    aug_translate: float = 0.08
-    aug_zoom: Tuple[float, float] = (0.9, 1.0)
-    aug_brightness: float = 0.10
-    aug_contrast: float = 0.10
+    aug_rotation_deg: int = 20          # slightly wider — anatomy still plausible
+    aug_translate: float = 0.10
+    aug_zoom: Tuple[float, float] = (0.85, 1.0)
+    aug_brightness: float = 0.15
+    aug_contrast: float = 0.15
     aug_hflip_p: float = 0.5            # left/right brains are both valid
     # NOTE: we deliberately do NOT use vertical flips or heavy distortion —
     # they create anatomically impossible scans and hurt a medical model.
+
+    # ── CutMix augmentation ────────────────────────────────────────────
+    # Patches from one image are cut and pasted onto another; labels are
+    # mixed proportionally to patch area. More effective than MixUp on
+    # small datasets — forces the network to use distributed features.
+    use_cutmix: bool = True             # enabled by default for custom_cnn
+    cutmix_alpha: float = 1.0           # Beta(1,1) = uniform patch size
 
     # ── Optimisation ───────────────────────────────────────────────────
     label_smoothing: float = 0.0        # dropped vs the old run (hurt minority recall)
@@ -100,8 +107,9 @@ class Config:
     # ── From-scratch training (CustomBrainCNN) ─────────────────────────
     # No pretrained backbone -> a single full-network phase instead of the
     # two-phase freeze/unfreeze schedule, at a moderate LR.
-    scratch_epochs: int = 40
+    scratch_epochs: int = 100           # longer run with cosine annealing
     scratch_lr: float = 3e-4
+    scratch_warmup_epochs: int = 5      # linear LR warmup before cosine decay
 
     # ── Progressive fine-tuning schedule ───────────────────────────────
     # Phase 1: backbone frozen, train only the new classifier head.

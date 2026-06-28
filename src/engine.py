@@ -102,9 +102,39 @@ def _mixup_batch(x, y, alpha: float, num_classes: int):
     return x_mixed, y_soft
 
 
+def _cutmix_batch(x, y, alpha: float, num_classes: int):
+    """CutMix (Yun et al., 2019): paste a random rectangular crop from one
+    image onto another. Labels are mixed proportional to the patch area.
+    More effective than MixUp on small datasets — forces distributed features."""
+    lam = float(torch.distributions.Beta(alpha, alpha).sample())
+    perm = torch.randperm(x.size(0), device=x.device)
+    _, _, H, W = x.shape
+
+    # Sample a random box with area proportional to (1 - lam)
+    cut_ratio = (1.0 - lam) ** 0.5
+    cut_h = int(H * cut_ratio)
+    cut_w = int(W * cut_ratio)
+    cx = torch.randint(W, (1,)).item()
+    cy = torch.randint(H, (1,)).item()
+    x1 = max(cx - cut_w // 2, 0)
+    y1 = max(cy - cut_h // 2, 0)
+    x2 = min(cx + cut_w // 2, W)
+    y2 = min(cy + cut_h // 2, H)
+
+    x_mixed = x.clone()
+    x_mixed[:, :, y1:y2, x1:x2] = x[perm, :, y1:y2, x1:x2]
+
+    # Recalculate lam from actual box area (may differ from sampled lam)
+    lam = 1.0 - (y2 - y1) * (x2 - x1) / (H * W)
+    y_onehot = F.one_hot(y, num_classes).float()
+    y_soft = lam * y_onehot + (1.0 - lam) * y_onehot[perm]
+    return x_mixed, y_soft
+
+
 def _run_epoch(model, loader, criterion, device, optimizer=None,
                scaler=None, use_amp=False, scheduler=None, epoch_idx=0,
-               use_mixup=False, mixup_alpha=0.2):
+               use_mixup=False, mixup_alpha=0.2,
+               use_cutmix=False, cutmix_alpha=1.0):
     """One pass over `loader`. Train mode if optimizer is given, else eval.
 
     `scheduler` is only passed for per-batch schedulers (cosine warm restarts),
@@ -124,16 +154,19 @@ def _run_epoch(model, loader, criterion, device, optimizer=None,
             if is_train:
                 optimizer.zero_grad(set_to_none=True)
 
-            mixed = is_train and use_mixup
-            if mixed:
+            # Choose augmentation: CutMix takes priority over MixUp when both enabled.
+            use_soft = False
+            x_in = x
+            if is_train and use_cutmix and not isinstance(criterion, FocalLoss):
+                x_in, y_soft = _cutmix_batch(x, y, cutmix_alpha, NUM_CLASSES)
+                use_soft = True
+            elif is_train and use_mixup and not isinstance(criterion, FocalLoss):
                 x_in, y_soft = _mixup_batch(x, y, mixup_alpha, NUM_CLASSES)
+                use_soft = True
 
             with torch.amp.autocast("cuda", enabled=use_amp):
-                logits = model(x_in if mixed else x)
-                if mixed:
-                    # Soft targets: criterion objects (FocalLoss, weighted CE)
-                    # expect hard labels, so use functional CE; carry over the
-                    # class weights if the criterion has them.
+                logits = model(x_in)
+                if use_soft:
                     loss = F.cross_entropy(logits, y_soft,
                                            weight=getattr(criterion, "weight", None))
                 else:
@@ -173,12 +206,10 @@ def _train_phase(model, loaders, criterion, optimizer, scheduler, cfg: Config,
     per_batch_sched = isinstance(
         scheduler, torch.optim.lr_scheduler.CosineAnnealingWarmRestarts)
 
-    # MixUp needs soft targets -> functional CE. FocalLoss has no soft-target
-    # form, so MixUp is silently incompatible — skip it and say so once.
-    use_mixup = cfg.use_mixup and not isinstance(criterion, FocalLoss)
-    if cfg.use_mixup and not use_mixup:
-        print(f"[{phase_name}] use_mixup=True ignored: FocalLoss does not "
-              f"support soft targets")
+    use_cutmix = getattr(cfg, "use_cutmix", False) and not isinstance(criterion, FocalLoss)
+    use_mixup  = cfg.use_mixup and not use_cutmix and not isinstance(criterion, FocalLoss)
+    if cfg.use_mixup and isinstance(criterion, FocalLoss):
+        print(f"[{phase_name}] use_mixup/cutmix ignored: FocalLoss does not support soft targets")
 
     for epoch in range(1, epochs + 1):
         t0 = time.time()
@@ -187,7 +218,9 @@ def _train_phase(model, loaders, criterion, optimizer, scheduler, cfg: Config,
                                      scheduler=scheduler if per_batch_sched else None,
                                      epoch_idx=epoch - 1,
                                      use_mixup=use_mixup,
-                                     mixup_alpha=cfg.mixup_alpha)
+                                     mixup_alpha=cfg.mixup_alpha,
+                                     use_cutmix=use_cutmix,
+                                     cutmix_alpha=getattr(cfg, "cutmix_alpha", 1.0))
         va_loss, va_acc = _run_epoch(model, loaders["val"], criterion, device,
                                      use_amp=cfg.use_amp)
         if not per_batch_sched:
@@ -222,25 +255,77 @@ def _train_from_scratch(model, loaders: Dict[str, DataLoader], criterion,
                         cfg: Config, ckpt_path: Path) -> History:
     """Single-phase, full-network training for from-scratch models.
 
-    There is no pretrained backbone to freeze, so the two-phase head-then-
-    fine-tune schedule does not apply. We train every parameter from random
-    init at a moderate LR for `cfg.scratch_epochs` (with the same early-stop,
-    checkpoint and ReduceLROnPlateau machinery as the transfer-learning path).
+    Uses a cosine-decay schedule with a short linear warmup: the LR ramps
+    from near-zero to cfg.scratch_lr over cfg.scratch_warmup_epochs, then
+    follows a cosine decay to zero over the remaining epochs. This is the
+    standard high-performance recipe for training from random init.
     """
     device = cfg.device
     model.to(device)
     history = History()
 
-    for p in model.parameters():        # everything trainable from the start
+    for p in model.parameters():
         p.requires_grad = True
 
-    print(f"\n=== From-scratch training ({model.arch_name}) | trainable params: "
-          f"{count_trainable(model):,} ===")
+    total_epochs = cfg.scratch_epochs
+    warmup_epochs = getattr(cfg, "scratch_warmup_epochs", 5)
+
+    print(f"\n=== From-scratch training ({model.arch_name}) | "
+          f"trainable params: {count_trainable(model):,} | "
+          f"warmup={warmup_epochs} epochs | total={total_epochs} epochs ===")
+
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.scratch_lr,
                             weight_decay=cfg.weight_decay)
-    sch = _build_scheduler(opt, cfg)
-    _train_phase(model, loaders, criterion, opt, sch, cfg,
-                 cfg.scratch_epochs, ckpt_path, history, "SCRATCH")
+
+    # Warmup: linear ramp from scratch_lr/100 to scratch_lr over warmup_epochs.
+    # After warmup: cosine decay to scratch_lr/100.
+    def lr_lambda(epoch):
+        if epoch < warmup_epochs:
+            return max(0.01, epoch / warmup_epochs)
+        progress = (epoch - warmup_epochs) / max(1, total_epochs - warmup_epochs)
+        return max(0.01, 0.5 * (1.0 + torch.cos(torch.tensor(3.14159 * progress)).item()))
+
+    sch = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda)
+
+    scaler = torch.amp.GradScaler("cuda", enabled=cfg.use_amp)
+    stopper = EarlyStopping(cfg.early_stop_patience, cfg.early_stop_min_delta)
+    best_state = copy.deepcopy(model.state_dict())
+
+    use_cutmix = getattr(cfg, "use_cutmix", False) and not isinstance(criterion, FocalLoss)
+    use_mixup  = cfg.use_mixup and not use_cutmix and not isinstance(criterion, FocalLoss)
+
+    for epoch in range(1, total_epochs + 1):
+        t0 = time.time()
+        tr_loss, tr_acc = _run_epoch(model, loaders["train"], criterion, device,
+                                     opt, scaler, cfg.use_amp,
+                                     use_mixup=use_mixup, mixup_alpha=cfg.mixup_alpha,
+                                     use_cutmix=use_cutmix,
+                                     cutmix_alpha=getattr(cfg, "cutmix_alpha", 1.0))
+        va_loss, va_acc = _run_epoch(model, loaders["val"], criterion, device,
+                                     use_amp=cfg.use_amp)
+        sch.step()
+        lr_now = opt.param_groups[0]["lr"]
+
+        history.train_loss.append(tr_loss); history.val_loss.append(va_loss)
+        history.train_acc.append(tr_acc);   history.val_acc.append(va_acc)
+        history.lr.append(lr_now)
+
+        is_best = stopper.step(va_loss)
+        if is_best:
+            best_state = copy.deepcopy(model.state_dict())
+            torch.save(best_state, ckpt_path)
+
+        print(f"Epoch {epoch:03d}/{total_epochs} "
+              f"| Loss {tr_loss:.4f}/{va_loss:.4f} "
+              f"| Acc {tr_acc:.3f}/{va_acc:.3f} "
+              f"| lr {lr_now:.2e} | {time.time()-t0:.1f}s"
+              f"{'  *' if is_best else ''}")
+
+        if stopper.should_stop:
+            print(f"Early stopping at epoch {epoch} (best val loss {stopper.best:.4f})")
+            break
+
+    model.load_state_dict(best_state)
     return history
 
 
