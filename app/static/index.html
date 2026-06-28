@@ -3,528 +3,537 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NeuroScan AI — MRI Analysis System</title>
+<title>NeuroScan AI — MRI Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#07090d;--surface:#0b0f15;--card:#0f1520;--card2:#121a28;
-  --border:rgba(0,200,140,.13);--border2:rgba(0,200,140,.25);
-  --green:#00d49c;--blue:#4da6ff;--amber:#f5a623;--red:#ff5566;--purple:#a78bfa;
-  --text:#cce8de;--muted:#4a6a60;--dim:#2a4a40;
-  --mono:'IBM Plex Mono',monospace;
+  --bg:#0a0c12;--bg2:#0d1018;
+  --surface:#141823;--surface2:#1a1f2e;--raised:#1e2433;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --teal:#2dd4bf;--teal-dim:#14b8a6;--indigo:#818cf8;--violet:#a78bfa;
+  --green:#34d399;--amber:#fbbf24;--red:#fb7185;--blue:#60a5fa;
+  --text:#e8ecf4;--text2:#9aa4b8;--muted:#5d6578;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+  --head:'Space Grotesk',sans-serif;
 }
-body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);
-  min-height:100vh;font-size:14px;line-height:1.5;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+  min-height:100vh;font-size:14px;line-height:1.55;
+  background-image:radial-gradient(1200px 600px at 85% -5%,rgba(45,212,191,.06),transparent 60%),
+    radial-gradient(900px 500px at 10% 10%,rgba(129,140,248,.05),transparent 55%);
+  background-attachment:fixed;}
 
-/* ── System bar ── */
-.sysbar{background:#060810;border-bottom:1px solid var(--border);
-  padding:0 20px;height:40px;display:flex;align-items:center;gap:0;
-  font-family:var(--mono);font-size:11px;color:var(--muted);position:sticky;top:0;z-index:100;}
-.sysbar .brand{color:var(--green);font-weight:500;letter-spacing:.08em;margin-right:20px;font-size:12px;}
-.sysbar .seg{padding:0 14px;border-right:1px solid var(--border);display:flex;align-items:center;gap:6px;}
-.sysbar .seg:last-child{border-right:none;margin-left:auto;}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
-.dot.green{background:var(--green);box-shadow:0 0 5px var(--green);}
-.dot.amber{background:var(--amber);}
-.dot.red{background:var(--red);}
-.sysbar .val{color:var(--text);}
+/* ── Top bar ── */
+.topbar{display:flex;align-items:center;gap:18px;padding:0 24px;height:56px;
+  background:rgba(13,16,24,.7);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--head);
+  font-weight:600;font-size:16px;letter-spacing:-.01em;}
+.logo .mark{width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,var(--teal),var(--indigo));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.topbar .stats{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;}
+.stat{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--text2);}
+.stat b{color:var(--text);font-family:var(--mono);font-weight:500;font-size:12px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(52,211,153,.18);}
+.dot.busy{background:var(--amber);box-shadow:0 0 0 3px rgba(251,191,36,.18);}
+.dot.err{background:var(--red);}
 
-/* ── Warning banner ── */
-.warn-banner{background:rgba(245,166,35,.08);border-bottom:1px solid rgba(245,166,35,.25);
-  padding:7px 20px;font-size:11px;font-family:var(--mono);color:var(--amber);
-  display:flex;align-items:center;gap:10px;}
-.warn-banner svg{flex-shrink:0;}
+/* ── Disclaimer ── */
+.notice{display:flex;align-items:center;gap:11px;padding:10px 24px;
+  background:rgba(251,191,36,.07);border-bottom:1px solid rgba(251,191,36,.16);
+  font-size:12.5px;color:#e8d9a8;}
+.notice svg{flex-shrink:0;color:var(--amber);}
+.notice b{color:var(--amber);font-weight:600;}
 
-/* ── Main layout ── */
-.workspace{display:grid;grid-template-columns:290px 370px 1fr;gap:0;min-height:calc(100vh - 40px - 34px);}
+/* ── Layout ── */
+.app{max-width:1500px;margin:0 auto;padding:24px;
+  display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start;}
+@media(max-width:1080px){.app{grid-template-columns:1fr;}}
 
-/* ── Panels ── */
-.panel{border-right:1px solid var(--border);padding:0;overflow-y:auto;}
-.panel:last-child{border-right:none;}
-.panel-hd{padding:12px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.2);}
-.panel-hd .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--muted);padding:2px 7px;
-  border:1px solid var(--border);border-radius:3px;}
-.panel-hd .title{font-family:var(--mono);font-size:12px;color:var(--green);font-weight:500;}
-.panel-body{padding:16px;}
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:20px;}
+.card + .card{margin-top:16px;}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.card-head .ico{width:30px;height:30px;border-radius:9px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;color:var(--teal);flex-shrink:0;}
+.card-head h2{font-family:var(--head);font-size:15px;font-weight:600;letter-spacing:-.01em;}
+.card-head .step{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);
+  background:var(--surface2);padding:3px 9px;border-radius:6px;}
 
-/* ── Section headers inside panels ── */
-.sec-hd{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
-.sec-hd::after{content:'';flex:1;height:1px;background:var(--border);}
-.mb{margin-bottom:18px;}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:11px;}
+.mt{margin-top:20px;}
 
-/* ── Model selector ── */
-select{width:100%;padding:9px 12px;background:var(--card);color:var(--text);
-  border:1px solid var(--border);border-radius:6px;font-family:'IBM Plex Sans';
-  font-size:13px;cursor:pointer;outline:none;appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%234a6a60' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;}
-select:focus{border-color:var(--green);}
-select option{background:#0f1520;}
+/* ── Select ── */
+.field-select{position:relative;}
+select{width:100%;padding:12px 14px;background:var(--surface2);color:var(--text);
+  border:1px solid var(--border2);border-radius:11px;font-family:var(--sans);
+  font-size:14px;font-weight:500;cursor:pointer;outline:none;appearance:none;
+  transition:border-color .15s;}
+select:hover{border-color:var(--teal-dim);}
+select:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(45,212,191,.12);}
+select option{background:#1a1f2e;}
+.field-select::after{content:'';position:absolute;right:15px;top:50%;width:8px;height:8px;
+  border-right:2px solid var(--text2);border-bottom:2px solid var(--text2);
+  transform:translateY(-65%) rotate(45deg);pointer-events:none;}
 
-/* ── Spec table ── */
-.spec-table{width:100%;border-collapse:collapse;font-size:12px;}
-.spec-table td{padding:6px 0;border-bottom:1px solid rgba(0,200,140,.06);vertical-align:top;}
-.spec-table td:first-child{color:var(--muted);font-family:var(--mono);font-size:11px;
-  padding-right:12px;white-space:nowrap;width:50%;}
-.spec-table td:last-child{color:var(--text);font-family:var(--mono);font-size:12px;text-align:right;}
-.spec-table .good{color:var(--green);}
-.spec-table .ok{color:var(--blue);}
-.spec-table .warn{color:var(--amber);}
+.model-status{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;color:var(--text2);}
+#modelStatus.ready{color:var(--green);} #modelStatus.busy{color:var(--amber);} #modelStatus.error{color:var(--red);}
 
-/* ── Status pill ── */
-.status-row{display:flex;align-items:center;gap:8px;margin-top:12px;
-  font-family:var(--mono);font-size:11px;color:var(--muted);min-height:20px;}
-.status-row .dot{flex-shrink:0;}
-#modelStatus{color:var(--muted);}
-#modelStatus.ready{color:var(--green);}
-#modelStatus.busy{color:var(--amber);}
-#modelStatus.error{color:var(--red);}
+/* ── Metric chips (headline stats) ── */
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+.metric{background:var(--surface2);border-radius:12px;padding:12px 13px;text-align:center;}
+.metric .v{font-family:var(--mono);font-size:19px;font-weight:500;color:var(--teal);line-height:1.1;}
+.metric .k{font-size:10.5px;color:var(--muted);margin-top:4px;letter-spacing:.04em;text-transform:uppercase;}
 
-/* ── Pipeline steps ── */
-.pipeline{display:flex;flex-direction:column;gap:6px;}
-.pipe-step{display:flex;align-items:center;gap:10px;padding:7px 10px;
-  border:1px solid var(--border);border-radius:6px;background:var(--card);
-  font-size:11px;font-family:var(--mono);color:var(--muted);transition:.3s;}
-.pipe-step.active{border-color:var(--green);color:var(--green);background:rgba(0,212,156,.06);}
-.pipe-step.done{border-color:rgba(0,212,156,.3);color:rgba(0,212,156,.6);}
-.pipe-icon{width:18px;height:18px;border-radius:50%;border:1px solid currentColor;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
-.pipe-step.done .pipe-icon::after{content:'✓';}
-.pipe-step.active .pipe-icon::after{content:'◉';}
-.pipe-step:not(.active):not(.done) .pipe-icon::after{content:'○';}
+/* ── Spec list ── */
+.specs{display:flex;flex-direction:column;gap:0;}
+.spec{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.spec:last-child{border-bottom:none;}
+.spec .k{color:var(--text2);}
+.spec .v{font-family:var(--mono);font-size:12.5px;color:var(--text);text-align:right;}
+.spec .v.teal{color:var(--teal);} .spec .v.blue{color:var(--blue);} .spec .v.amber{color:var(--amber);}
 
-/* ── Upload zone ── */
-.drop-zone{border:1.5px dashed var(--border2);border-radius:10px;padding:22px 16px;
-  text-align:center;cursor:pointer;transition:.2s;background:rgba(0,0,0,.2);}
-.drop-zone:hover,.drop-zone.over{border-color:var(--green);background:rgba(0,212,156,.04);}
-.drop-zone .dz-icon{font-size:28px;margin-bottom:8px;opacity:.6;}
-.drop-zone p{font-size:12px;color:var(--muted);line-height:1.6;}
-.drop-zone b{color:var(--text);}
+/* ── Pipeline ── */
+.pipeline{position:relative;padding-left:6px;}
+.pipe{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:13px;color:var(--text2);
+  transition:color .3s;}
+.pipe .node{width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:var(--surface);transition:.3s;font-size:11px;}
+.pipe.active{color:var(--teal);}
+.pipe.active .node{border-color:var(--teal);background:rgba(45,212,191,.12);color:var(--teal);}
+.pipe.done{color:var(--text2);}
+.pipe.done .node{border-color:var(--teal-dim);background:var(--teal-dim);color:#06241f;}
+.pipe.done .node::after{content:'✓';font-weight:600;}
+.pipe.active .node::after{content:'●';}
+
+/* ── Tumor legend ── */
+.legend{display:flex;flex-direction:column;gap:8px;}
+.leg{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;}
+.leg .swatch{width:9px;height:9px;border-radius:3px;margin-top:5px;flex-shrink:0;}
+.leg .name{font-weight:600;color:var(--text);min-width:88px;}
+.leg .desc{color:var(--text2);font-size:12px;}
+
+/* ── Workflow (right side) ── */
+.workflow{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+@media(max-width:760px){.workflow{grid-template-columns:1fr;}}
+
+/* ── Upload ── */
+.drop{border:2px dashed var(--border2);border-radius:14px;padding:30px 20px;text-align:center;
+  cursor:pointer;transition:.2s;background:var(--surface2);}
+.drop:hover,.drop.over{border-color:var(--teal);background:rgba(45,212,191,.05);}
+.drop .dico{width:46px;height:46px;margin:0 auto 12px;border-radius:13px;
+  background:linear-gradient(135deg,rgba(45,212,191,.18),rgba(129,140,248,.14));
+  display:flex;align-items:center;justify-content:center;color:var(--teal);}
+.drop p{font-size:13.5px;color:var(--text2);}
+.drop b{color:var(--text);font-weight:600;}
+.drop .hint{font-size:12px;color:var(--muted);margin-top:5px;}
 input[type=file]{display:none;}
 
-/* ── Preview card ── */
-#previewCard{display:none;margin-top:12px;background:var(--card);
-  border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-#previewCard img{width:100%;max-height:200px;object-fit:contain;display:block;background:#000;}
-.preview-meta{padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--muted);
-  display:flex;gap:12px;flex-wrap:wrap;border-top:1px solid var(--border);}
-.preview-meta span{color:var(--text);}
+.preview{display:none;margin-top:14px;border-radius:13px;overflow:hidden;
+  border:1px solid var(--border2);background:#000;}
+.preview img{width:100%;max-height:230px;object-fit:contain;display:block;}
 
-/* ── Run button ── */
-.btn-run{width:100%;margin-top:14px;padding:11px;border:1.5px solid var(--green);
-  border-radius:7px;cursor:pointer;font-family:'Space Grotesk';font-weight:600;
-  font-size:14px;color:var(--bg);background:var(--green);transition:.2s;letter-spacing:.02em;}
-.btn-run:disabled{opacity:.35;cursor:not-allowed;background:transparent;color:var(--green);}
-.btn-run:hover:not(:disabled){filter:brightness(1.12);}
+.btn{width:100%;margin-top:16px;padding:13px;border:none;border-radius:12px;cursor:pointer;
+  font-family:var(--head);font-weight:600;font-size:15px;color:#04211c;
+  background:linear-gradient(135deg,var(--teal),var(--teal-dim));transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.3);}
+.btn:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);}
+.err{font-size:12.5px;color:var(--red);margin-top:10px;font-family:var(--mono);min-height:16px;}
 
-/* ── Error ── */
-.err-msg{font-family:var(--mono);font-size:11px;color:var(--red);margin-top:8px;min-height:16px;}
+/* ── Results ── */
+.placeholder{text-align:center;padding:46px 24px;color:var(--text2);}
+.placeholder .pico{width:60px;height:60px;margin:0 auto 16px;border-radius:50%;
+  background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);}
+.placeholder strong{color:var(--text);font-weight:600;}
 
-/* ── Results panel ── */
-#placeholder{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;line-height:2;}
-#placeholder .ph-icon{font-size:36px;margin-bottom:12px;opacity:.25;}
+.verdict{background:linear-gradient(135deg,rgba(45,212,191,.12),rgba(129,140,248,.08));
+  border:1px solid rgba(45,212,191,.25);border-radius:15px;padding:20px;margin-bottom:18px;}
+.verdict .vk{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--teal);margin-bottom:10px;}
+.verdict-main{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+.verdict .vclass{font-family:var(--head);font-size:30px;font-weight:700;letter-spacing:-.02em;color:#fff;}
+.verdict .vconf{font-family:var(--mono);font-size:17px;color:var(--text);}
+.conf-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;
+  font-size:12px;font-weight:600;margin-top:12px;}
+.conf-badge.high{background:rgba(52,211,153,.16);color:var(--green);}
+.conf-badge.mod{background:rgba(251,191,36,.16);color:var(--amber);}
+.conf-badge.low{background:rgba(251,113,133,.16);color:var(--red);}
+.calib{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:10px;}
 
-/* Verdict box */
-.verdict-box{background:var(--card2);border:1px solid var(--border2);border-radius:10px;
-  padding:18px 20px;margin-bottom:16px;}
-.verdict-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
-.verdict-class{font-family:'Space Grotesk';font-size:30px;font-weight:700;
-  color:var(--green);letter-spacing:-.02em;margin-bottom:4px;}
-.verdict-conf{font-family:var(--mono);font-size:18px;color:var(--text);}
-.verdict-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
-.calibration-note{font-family:var(--mono);font-size:10px;color:var(--muted);
-  margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+/* probability bars */
+.scores{display:flex;flex-direction:column;gap:11px;}
+.score .srow{display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px;}
+.score .scls{font-weight:500;}
+.score .spct{font-family:var(--mono);color:var(--text2);font-size:12.5px;}
+.score .spct.top{color:var(--teal);font-weight:500;}
+.bar-track{height:8px;background:var(--surface2);border-radius:5px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:5px;width:0;background:var(--muted);
+  transition:width .8s cubic-bezier(.34,1.2,.64,1);}
+.bar-fill.top{background:linear-gradient(90deg,var(--teal-dim),var(--teal));}
 
-/* Score bars */
-.score-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
-.score-item{}
-.score-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;}
-.score-row .cls{color:var(--text);font-weight:500;}
-.score-row .pct{font-family:var(--mono);color:var(--muted);}
-.score-row .pct.top{color:var(--green);}
-.track{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
-.fill{height:100%;border-radius:3px;background:var(--muted);width:0;transition:width .7s cubic-bezier(.4,0,.2,1);}
-.fill.top{background:var(--green);}
+/* gradcam */
+.gc img{width:100%;max-width:300px;border-radius:13px;border:1px solid var(--border2);display:block;}
+.gc .cap{font-size:12px;color:var(--text2);margin-top:9px;line-height:1.6;}
+.gc .cap code{font-family:var(--mono);font-size:11px;color:var(--teal);
+  background:var(--surface2);padding:1px 5px;border-radius:4px;}
+.gc-na{font-size:12.5px;color:var(--text2);padding:14px;background:var(--surface2);
+  border-radius:11px;line-height:1.6;}
 
-/* Grad-CAM */
-.gc-block{margin-bottom:16px;}
-.gc-hd{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
-.gc-hd::after{content:'';flex:1;height:1px;background:var(--border);}
-.gc-img{width:100%;max-width:280px;border-radius:8px;border:1px solid var(--border);display:block;}
-.gc-caption{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6;}
-.gc-na{font-family:var(--mono);font-size:11px;color:var(--muted);padding:10px;
-  background:var(--card);border-radius:6px;border:1px solid var(--border);}
+/* meta grid */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mcard{background:var(--surface2);border-radius:11px;padding:12px 14px;}
+.mcard .mk{font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.mcard .mv{font-family:var(--mono);font-size:15px;font-weight:500;color:var(--text);}
+.mcard .mv.teal{color:var(--teal);} .mcard .mv.blue{color:var(--blue);}
 
-/* Inference meta grid */
-.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.meta-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:10px 12px;}
-.meta-card .mk{font-family:var(--mono);font-size:9px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
-.meta-card .mv{font-family:var(--mono);font-size:14px;color:var(--text);font-weight:500;}
-.meta-card .mv.green{color:var(--green);}
-.meta-card .mv.blue{color:var(--blue);}
-.meta-card .mv.amber{color:var(--amber);}
+.anat{font-size:12.5px;color:var(--text2);line-height:1.6;padding:13px;
+  background:var(--surface2);border-radius:11px;}
+.anat b{color:var(--text);font-weight:600;}
 
-/* ── Log panel ── */
-.log-panel{border-top:1px solid var(--border);background:#060810;}
-.log-hd{padding:8px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
-.log-hd .log-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--muted);}
-.log-body{font-family:var(--mono);font-size:11px;padding:8px 16px;height:100px;
-  overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
-.log-line{display:flex;gap:10px;opacity:.9;}
-.log-line .lt{color:var(--dim);flex-shrink:0;min-width:54px;}
-.log-line .lm{color:var(--muted);}
-.log-line .lm.ok{color:var(--green);}
-.log-line .lm.warn{color:var(--amber);}
-.log-line .lm.info{color:var(--blue);}
-.log-line .lm.err{color:var(--red);}
+/* ── Log ── */
+.log-card{margin-top:20px;}
+.log-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.log-toggle .chev{margin-left:auto;color:var(--muted);transition:transform .2s;}
+.log-card.open .log-toggle .chev{transform:rotate(180deg);}
+.log-body{display:none;margin-top:14px;font-family:var(--mono);font-size:12px;
+  max-height:170px;overflow-y:auto;flex-direction:column;gap:3px;
+  background:var(--bg2);border-radius:11px;padding:13px 15px;border:1px solid var(--border);}
+.log-card.open .log-body{display:flex;}
+.log-line{display:flex;gap:12px;}
+.log-line .t{color:var(--muted);flex-shrink:0;}
+.log-line .m{color:var(--text2);}
+.log-line .m.ok{color:var(--green);} .log-line .m.warn{color:var(--amber);}
+.log-line .m.info{color:var(--blue);} .log-line .m.err{color:var(--red);}
 
-/* ── Footer ── */
-footer{background:#060810;border-top:1px solid var(--border);padding:10px 20px;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
-footer .fl{font-family:var(--mono);font-size:10px;color:var(--muted);}
-footer .fr{font-family:var(--mono);font-size:10px;color:var(--dim);}
+footer{max-width:1500px;margin:0 auto;padding:8px 24px 28px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  font-size:11.5px;color:var(--muted);font-family:var(--mono);}
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+::-webkit-scrollbar{width:7px;height:7px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 
-/* ── Spinner ── */
 @keyframes spin{to{transform:rotate(360deg);}}
-.spinner{width:10px;height:10px;border:1.5px solid var(--dim);
-  border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
-
-@media(max-width:900px){
-  .workspace{grid-template-columns:1fr;}
-  .panel{border-right:none;border-bottom:1px solid var(--border);}
-}
+.spin{width:14px;height:14px;border:2px solid rgba(4,33,28,.3);
+  border-top-color:#04211c;border-radius:50%;animation:spin .7s linear infinite;}
 </style>
 </head>
 <body>
 
-<!-- ── System bar ── -->
-<header class="sysbar">
-  <span class="brand">NEUROSCAN AI</span>
-  <div class="seg"><div class="dot green" id="sysDot"></div><span>SYS</span><span class="val" id="sysState">READY</span></div>
-  <div class="seg"><span>SESSION</span><span class="val" id="sessionId">—</span></div>
-  <div class="seg"><span>DEVICE</span><span class="val" id="sysDevice">—</span></div>
-  <div class="seg"><span>INFERENCES</span><span class="val" id="infCount">0</span></div>
-  <div class="seg"><span id="sysClock">—</span></div>
+<!-- ── Top bar ── -->
+<header class="topbar">
+  <div class="logo">
+    <span class="mark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#04211c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 2a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 1 5 3 3 0 0 0 4 3 3 3 0 0 0 3-2"/>
+        <path d="M15 2a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-1 5 3 3 0 0 1-4 3 3 3 0 0 1-3-2"/>
+        <path d="M12 4v16"/>
+      </svg>
+    </span>
+    NeuroScan<span style="color:var(--teal)">AI</span>
+  </div>
+  <div class="stats">
+    <span class="stat"><span class="dot live" id="sysDot"></span><span id="sysState">Ready</span></span>
+    <span class="stat">Session <b id="sessionId">—</b></span>
+    <span class="stat">Device <b id="sysDevice">—</b></span>
+    <span class="stat">Runs <b id="infCount">0</b></span>
+    <span class="stat"><b id="sysClock" style="font-size:11.5px">—</b></span>
+  </div>
 </header>
 
-<!-- ── Warning banner ── -->
-<div class="warn-banner">
-  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-    <path d="M8 1L15 14H1L8 1z" stroke="#f5a623" stroke-width="1.4" stroke-linejoin="round"/>
-    <path d="M8 6v4M8 11.5v.5" stroke="#f5a623" stroke-width="1.4" stroke-linecap="round"/>
+<!-- ── Disclaimer ── -->
+<div class="notice">
+  <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+    <path d="M8 1.5L15 14H1L8 1.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M8 6v4M8 11.4v.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
-  FOR RESEARCH AND EDUCATIONAL USE ONLY — NOT VALIDATED FOR CLINICAL DIAGNOSTIC DECISIONS.
-  All model outputs must be reviewed by a qualified medical professional.
+  <span><b>Research &amp; educational use only.</b> Not validated for clinical diagnosis — all outputs require review by a qualified medical professional.</span>
 </div>
 
-<!-- ── Main workspace ── -->
-<div class="workspace">
+<!-- ── App ── -->
+<div class="app">
 
-  <!-- ════ LEFT: Model Configuration ════ -->
-  <aside class="panel">
-    <div class="panel-hd">
-      <span class="tag">01</span>
-      <span class="title">Model Configuration</span>
-    </div>
-    <div class="panel-body">
+  <!-- ════ SIDEBAR ════ -->
+  <aside>
+    <div class="card">
+      <div class="card-head">
+        <span class="ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </span>
+        <h2>Model</h2>
+        <span class="step">step 1</span>
+      </div>
 
-      <div class="mb">
-        <div class="sec-hd">Architecture Selection</div>
+      <div class="field-select">
         <select id="modelSelect"></select>
-        <div class="status-row">
-          <div class="dot" id="modelDot"></div>
-          <span id="modelStatus">waiting for model list…</span>
+      </div>
+      <div class="model-status">
+        <span class="dot" id="modelDot"></span>
+        <span id="modelStatus">Loading model list…</span>
+      </div>
+
+      <div class="mt">
+        <div class="section-label">Benchmark — Protocol B</div>
+        <div class="metrics">
+          <div class="metric"><div class="v" id="sp-acc">—</div><div class="k">Accuracy</div></div>
+          <div class="metric"><div class="v" id="sp-f1">—</div><div class="k">Macro F1</div></div>
+          <div class="metric"><div class="v" id="sp-auc">—</div><div class="k">ROC-AUC</div></div>
         </div>
       </div>
 
-      <div class="mb">
-        <div class="sec-hd">Model Specifications</div>
-        <table class="spec-table" id="specTable">
-          <tr><td>Type</td><td id="sp-type">—</td></tr>
-          <tr><td>Parameters</td><td id="sp-params">—</td></tr>
-          <tr><td>Training</td><td id="sp-protocol">—</td></tr>
-          <tr><td>Input size</td><td id="sp-input">—</td></tr>
-          <tr><td>Accuracy</td><td id="sp-acc" class="good">—</td></tr>
-          <tr><td>Macro F1</td><td id="sp-f1" class="good">—</td></tr>
-          <tr><td>ROC-AUC</td><td id="sp-auc" class="ok">—</td></tr>
-          <tr><td>ECE (cal.)</td><td id="sp-ece">—</td></tr>
-          <tr><td>Latency</td><td id="sp-lat">—</td></tr>
-          <tr><td>Explainable</td><td id="sp-xai">—</td></tr>
-        </table>
-      </div>
-
-      <div class="mb">
-        <div class="sec-hd">Preprocessing Pipeline</div>
-        <div class="pipeline">
-          <div class="pipe-step" id="pipe-load">
-            <div class="pipe-icon"></div><span>Image load &amp; decode</span>
-          </div>
-          <div class="pipe-step" id="pipe-crop">
-            <div class="pipe-icon"></div><span>Otsu brain-region crop</span>
-          </div>
-          <div class="pipe-step" id="pipe-clahe">
-            <div class="pipe-icon"></div><span>CLAHE contrast (L-ch)</span>
-          </div>
-          <div class="pipe-step" id="pipe-resize">
-            <div class="pipe-icon"></div><span>Resize → 224 × 224</span>
-          </div>
-          <div class="pipe-step" id="pipe-norm">
-            <div class="pipe-icon"></div><span>ImageNet normalisation</span>
-          </div>
-          <div class="pipe-step" id="pipe-infer">
-            <div class="pipe-icon"></div><span>Model forward pass</span>
-          </div>
-          <div class="pipe-step" id="pipe-grad">
-            <div class="pipe-icon"></div><span>Grad-CAM backward pass</span>
-          </div>
+      <div class="mt">
+        <div class="section-label">Specifications</div>
+        <div class="specs">
+          <div class="spec"><span class="k">Type</span><span class="v" id="sp-type">—</span></div>
+          <div class="spec"><span class="k">Parameters</span><span class="v" id="sp-params">—</span></div>
+          <div class="spec"><span class="k">Training</span><span class="v" id="sp-protocol">—</span></div>
+          <div class="spec"><span class="k">Input size</span><span class="v" id="sp-input">—</span></div>
+          <div class="spec"><span class="k">Calibration ECE</span><span class="v" id="sp-ece">—</span></div>
+          <div class="spec"><span class="k">Latency</span><span class="v blue" id="sp-lat">—</span></div>
+          <div class="spec"><span class="k">Explainable</span><span class="v teal" id="sp-xai">—</span></div>
         </div>
       </div>
+    </div>
 
-      <div>
-        <div class="sec-hd">Classes</div>
-        <table class="spec-table">
-          <tr><td>Glioma</td><td class="warn">Intra-axial, infiltrative</td></tr>
-          <tr><td>Meningioma</td><td class="ok">Extra-axial, dural</td></tr>
-          <tr><td>Pituitary</td><td class="ok">Sella turcica, midline</td></tr>
-          <tr><td>No Tumor</td><td class="good">Normal parenchyma</td></tr>
-        </table>
+    <div class="card">
+      <div class="card-head">
+        <span class="ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l3 8 4-16 3 8h2"/></svg>
+        </span>
+        <h2>Pipeline</h2>
       </div>
+      <div class="pipeline">
+        <div class="pipe" id="pipe-load"><span class="node"></span>Image load &amp; decode</div>
+        <div class="pipe" id="pipe-crop"><span class="node"></span>Otsu brain-region crop</div>
+        <div class="pipe" id="pipe-clahe"><span class="node"></span>CLAHE contrast (L-channel)</div>
+        <div class="pipe" id="pipe-resize"><span class="node"></span>Resize to model input</div>
+        <div class="pipe" id="pipe-norm"><span class="node"></span>ImageNet normalisation</div>
+        <div class="pipe" id="pipe-infer"><span class="node"></span>Model forward pass</div>
+        <div class="pipe" id="pipe-grad"><span class="node"></span>Grad-CAM backward pass</div>
+      </div>
+    </div>
 
+    <div class="card">
+      <div class="card-head">
+        <span class="ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+        </span>
+        <h2>Classes</h2>
+      </div>
+      <div class="legend">
+        <div class="leg"><span class="swatch" style="background:var(--amber)"></span><span class="name">Glioma</span><span class="desc">Intra-axial, infiltrative mass</span></div>
+        <div class="leg"><span class="swatch" style="background:var(--blue)"></span><span class="name">Meningioma</span><span class="desc">Extra-axial, dural attachment</span></div>
+        <div class="leg"><span class="swatch" style="background:var(--violet)"></span><span class="name">Pituitary</span><span class="desc">Sella turcica, midline</span></div>
+        <div class="leg"><span class="swatch" style="background:var(--green)"></span><span class="name">No Tumor</span><span class="desc">Normal parenchyma</span></div>
+      </div>
     </div>
   </aside>
 
-  <!-- ════ CENTER: Scan Input ════ -->
-  <section class="panel">
-    <div class="panel-hd">
-      <span class="tag">02</span>
-      <span class="title">Scan Input</span>
-    </div>
-    <div class="panel-body">
+  <!-- ════ WORKFLOW ════ -->
+  <main>
+    <div class="workflow">
 
-      <div class="mb">
-        <div class="sec-hd">Upload MRI Scan</div>
-        <div class="drop-zone" id="dropZone">
-          <div class="dz-icon">⬡</div>
-          <p><b>Click to choose</b> or drag &amp; drop</p>
-          <p>T1 / T2 / FLAIR — JPEG or PNG</p>
+      <!-- Upload -->
+      <div class="card">
+        <div class="card-head">
+          <span class="ico">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          </span>
+          <h2>Scan input</h2>
+          <span class="step">step 2</span>
+        </div>
+
+        <div class="drop" id="dropZone">
+          <div class="dico">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </div>
+          <p><b>Click to upload</b> or drag &amp; drop</p>
+          <p class="hint">Brain MRI — T1 / T2 / FLAIR · JPEG or PNG</p>
         </div>
         <input type="file" id="fileInput" accept="image/*">
 
-        <div id="previewCard">
-          <img id="previewImg" alt="MRI preview">
-          <div class="preview-meta" id="previewMeta"></div>
-        </div>
-      </div>
+        <div class="preview" id="previewCard"><img id="previewImg" alt="MRI preview"></div>
 
-      <div class="mb">
-        <div class="sec-hd">Scan Metadata</div>
-        <table class="spec-table" id="scanMeta">
-          <tr><td>Filename</td><td id="sm-name">—</td></tr>
-          <tr><td>Size</td><td id="sm-size">—</td></tr>
-          <tr><td>Dimensions</td><td id="sm-dim">—</td></tr>
-          <tr><td>Format</td><td id="sm-fmt">—</td></tr>
-          <tr><td>Colour space</td><td id="sm-cs">—</td></tr>
-        </table>
-      </div>
-
-      <button class="btn-run" id="btnRun" disabled>Run Analysis</button>
-      <div class="err-msg" id="errMsg"></div>
-
-    </div>
-  </section>
-
-  <!-- ════ RIGHT: Analysis Results ════ -->
-  <section class="panel">
-    <div class="panel-hd">
-      <span class="tag">03</span>
-      <span class="title">Analysis Output</span>
-    </div>
-    <div class="panel-body" id="resultsBody">
-
-      <div id="placeholder">
-        <div class="ph-icon">◎</div>
-        <div>Select a model, upload a brain MRI scan,<br>and press <strong>Run Analysis</strong> to begin.</div>
-      </div>
-
-      <div id="resultPanel" style="display:none">
-
-        <!-- Verdict -->
-        <div class="verdict-box">
-          <div class="verdict-label">Primary classification</div>
-          <div class="verdict-row">
-            <div class="verdict-class" id="rClass">—</div>
-            <div class="verdict-conf" id="rConf"></div>
+        <div class="mt" id="scanMetaWrap" style="display:none">
+          <div class="section-label">Scan metadata</div>
+          <div class="specs">
+            <div class="spec"><span class="k">Filename</span><span class="v" id="sm-name">—</span></div>
+            <div class="spec"><span class="k">File size</span><span class="v" id="sm-size">—</span></div>
+            <div class="spec"><span class="k">Dimensions</span><span class="v" id="sm-dim">—</span></div>
+            <div class="spec"><span class="k">Format</span><span class="v" id="sm-fmt">—</span></div>
           </div>
-          <div class="calibration-note" id="rCalib"></div>
         </div>
 
-        <!-- Score bars -->
-        <div class="mb">
-          <div class="sec-hd">Class probability distribution</div>
-          <div class="score-list" id="scoreBars"></div>
+        <button class="btn" id="btnRun" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Run analysis
+        </button>
+        <div class="err" id="errMsg"></div>
+      </div>
+
+      <!-- Results -->
+      <div class="card">
+        <div class="card-head">
+          <span class="ico">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span>
+          <h2>Results</h2>
+          <span class="step">step 3</span>
         </div>
 
-        <!-- Grad-CAM -->
-        <div class="gc-block mb" id="gcBlock"></div>
-
-        <!-- Inference metadata -->
-        <div class="mb">
-          <div class="sec-hd">Inference metadata</div>
-          <div class="meta-grid" id="metaGrid"></div>
+        <div class="placeholder" id="placeholder">
+          <div class="pico">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          Pick a model, upload a scan, and press<br><strong>Run analysis</strong> to see the prediction.
         </div>
 
-        <!-- Attention anatomy note -->
-        <div id="anatomyNote" style="display:none;margin-bottom:16px;">
-          <div class="sec-hd">Attention anatomy</div>
-          <table class="spec-table" id="anatomyTable"></table>
-        </div>
+        <div id="resultPanel" style="display:none">
+          <div class="verdict">
+            <div class="vk">Primary classification</div>
+            <div class="verdict-main">
+              <span class="vclass" id="rClass">—</span>
+              <span class="vconf" id="rConf"></span>
+            </div>
+            <span class="conf-badge" id="rBadge"></span>
+            <div class="calib" id="rCalib"></div>
+          </div>
 
+          <div class="section-label">Class probabilities</div>
+          <div class="scores" id="scoreBars"></div>
+
+          <div class="gc mt" id="gcBlock"></div>
+
+          <div class="mt">
+            <div class="section-label">Inference details</div>
+            <div class="mgrid" id="metaGrid"></div>
+          </div>
+
+          <div class="mt" id="anatomyNote" style="display:none">
+            <div class="section-label">Attention anatomy</div>
+            <div class="anat" id="anatomyTable"></div>
+          </div>
+        </div>
       </div>
     </div>
-  </section>
-</div>
 
-<!-- ── Log panel ── -->
-<div class="log-panel">
-  <div class="log-hd">
-    <span class="log-title">System Log</span>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--dim);margin-left:auto;">scroll to review</div>
-  </div>
-  <div class="log-body" id="logBody"></div>
+    <!-- Log -->
+    <div class="card log-card" id="logCard">
+      <div class="card-head log-toggle" id="logToggle" style="margin-bottom:0">
+        <span class="ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+        </span>
+        <h2>Activity log</h2>
+        <span class="chev">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </span>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </main>
 </div>
 
 <footer>
-  <span class="fl">Aadityan Gupta · IIT Roorkee · Protocol B (stratified 70/15/15 re-split)</span>
-  <span class="fr">pipeline: src/preprocessing → src/models → Grad-CAM · v2.0</span>
+  <span>Aadityan Gupta · IIT Roorkee · evaluated under Protocol B (stratified 70/15/15 re-split)</span>
+  <span>src/preprocessing → src/models → Grad-CAM · v2.1</span>
 </footer>
 
 <script>
 const $ = id => document.getElementById(id);
 
-/* ── Metadata for each model (Protocol B results) ── */
 const MODEL_META = {
-  custom_cnn:      {protocol:'From scratch, 100 ep',input:'256×256',acc:'0.904',f1:'0.906',auc:'0.988',ece:'0.050',lat:'~4 ms',xai:'Yes — Grad-CAM'},
-  resnet50:        {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.894',f1:'0.903',auc:'0.988',ece:'0.037',lat:'~3 ms',xai:'Yes — Grad-CAM'},
-  efficientnet_b0: {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.890',f1:'0.900',auc:'0.982',ece:'0.045',lat:'~2 ms',xai:'Yes — Grad-CAM'},
-  densenet121:     {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.887',f1:'0.895',auc:'0.981',ece:'0.048',lat:'~4 ms',xai:'Yes — Grad-CAM'},
-  vgg16:           {protocol:'Transfer, 2-phase',  input:'224×224',acc:'0.872',f1:'0.877',auc:'0.975',ece:'0.062',lat:'~8 ms',xai:'Yes — Grad-CAM'},
-  svm_hog:         {protocol:'Classical ML',       input:'128×128 gray',acc:'0.772',f1:'0.728',auc:'0.946',ece:'N/A',lat:'~0.3 ms',xai:'No (not a CNN)'},
+  custom_cnn:      {protocol:'From scratch, 100 ep',input:'256 × 256',acc:'0.904',f1:'0.906',auc:'0.988',ece:'0.050',lat:'~4 ms',xai:'Yes'},
+  resnet50:        {protocol:'Transfer, 2-phase',  input:'224 × 224',acc:'0.894',f1:'0.903',auc:'0.988',ece:'0.037',lat:'~3 ms',xai:'Yes'},
+  efficientnet_b0: {protocol:'Transfer, 2-phase',  input:'224 × 224',acc:'0.890',f1:'0.900',auc:'0.982',ece:'0.045',lat:'~2 ms',xai:'Yes'},
+  densenet121:     {protocol:'Transfer, 2-phase',  input:'224 × 224',acc:'0.887',f1:'0.895',auc:'0.981',ece:'0.048',lat:'~4 ms',xai:'Yes'},
+  vgg16:           {protocol:'Transfer, 2-phase',  input:'224 × 224',acc:'0.872',f1:'0.877',auc:'0.975',ece:'0.062',lat:'~8 ms',xai:'Yes'},
+  svm_hog:         {protocol:'Classical ML',       input:'128 × 128',acc:'0.772',f1:'0.728',auc:'0.946',ece:'N/A',lat:'~0.3 ms',xai:'No'},
 };
-
 const ANATOMY = {
-  'Glioma':     'Infiltrating mass, frontal / temporal lobes, irregular margins, perilesional oedema',
-  'Meningioma': 'Extra-axial, dural tail sign, uniform enhancement adjacent to falx / convexity',
-  'Pituitary':  'Sella turcica, pituitary fossa, midline — adenoma or macroadenoma pattern',
-  'No Tumor':   'No focal lesion; attention diffuse over normal parenchyma and sulcal patterns',
+  'Glioma':'Infiltrating mass in the frontal / temporal lobes with irregular margins and perilesional oedema.',
+  'Meningioma':'Extra-axial lesion with a dural tail sign and uniform enhancement near the falx or convexity.',
+  'Pituitary':'Midline lesion in the sella turcica / pituitary fossa — adenoma or macroadenoma pattern.',
+  'No Tumor':'No focal lesion. Attention spreads diffusely over normal parenchyma and sulcal patterns.',
 };
 
-/* ── Session setup ── */
-const SESSION_ID = Math.random().toString(16).slice(2,10).toUpperCase();
+const SESSION_ID = Math.random().toString(16).slice(2,8).toUpperCase();
 $('sessionId').textContent = SESSION_ID;
 let infCount = 0;
 
-/* ── Clock ── */
-function tick(){
-  const now = new Date();
-  $('sysClock').textContent = now.toISOString().replace('T',' ').slice(0,19)+' UTC';
-}
-tick(); setInterval(tick, 1000);
+function tick(){ $('sysClock').textContent = new Date().toISOString().slice(11,19)+' UTC'; }
+tick(); setInterval(tick,1000);
 
-/* ── Log ── */
-function log(msg, cls=''){
-  const ts = new Date().toISOString().slice(11,23);
+function log(msg,cls=''){
+  const t = new Date().toISOString().slice(11,23);
   const el = document.createElement('div');
-  el.className = 'log-line';
-  el.innerHTML = `<span class="lt">${ts}</span><span class="lm ${cls}">${msg}</span>`;
-  const lb = $('logBody');
-  lb.appendChild(el);
-  lb.scrollTop = lb.scrollHeight;
+  el.className='log-line';
+  el.innerHTML=`<span class="t">${t}</span><span class="m ${cls}">${msg}</span>`;
+  $('logBody').appendChild(el);
+  $('logBody').scrollTop = $('logBody').scrollHeight;
 }
 
-/* ── Pipeline step helpers ── */
-const PIPES = ['load','crop','clahe','resize','norm','infer','grad'];
-function pipeReset(){PIPES.forEach(p=>{const el=$('pipe-'+p);el.classList.remove('active','done');});}
-function pipeActive(id){$('pipe-'+id).classList.add('active');}
-function pipeDone(id){const el=$('pipe-'+id);el.classList.remove('active');el.classList.add('done');}
+$('logToggle').onclick = ()=> $('logCard').classList.toggle('open');
 
-/* ── Model list ── */
+const PIPES=['load','crop','clahe','resize','norm','infer','grad'];
+const pipeReset=()=>PIPES.forEach(p=>$('pipe-'+p).classList.remove('active','done'));
+const pipeActive=id=>$('pipe-'+id).classList.add('active');
+const pipeDone=id=>{const e=$('pipe-'+id);e.classList.remove('active');e.classList.add('done');};
+
 let MODELS=[], currentModel=null, file=null;
 
 async function init(){
-  log('Initialising NeuroScan AI — session '+SESSION_ID,'info');
+  $('logCard').classList.add('open');
+  log('Initialising NeuroScan AI · session '+SESSION_ID,'info');
   try{
     const r = await fetch('/api/models').then(r=>r.json());
     MODELS = r.models||[];
-    $('sysDevice').textContent = (r.device||'cpu').toUpperCase();
-    if(!MODELS.length){
-      log('No trained checkpoints found in models/','warn');
-      $('modelStatus').textContent='No models found'; $('modelStatus').className='error';
-      return;
-    }
-    log(`Found ${MODELS.length} model checkpoint(s)`,'ok');
+    $('sysDevice').textContent=(r.device||'cpu').toUpperCase();
+    if(!MODELS.length){ log('No trained checkpoints found','warn'); setStatus('error','No models found'); return; }
+    log(`Loaded ${MODELS.length} model checkpoint(s)`,'ok');
     $('modelSelect').innerHTML = MODELS.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
     renderSpecs(); loadModel();
-  }catch(e){
-    log('Failed to reach /api/models — is uvicorn running?','err');
-  }
+  }catch(e){ log('Cannot reach /api/models — is the server running?','err'); setStatus('error','Connection failed'); }
 }
 
 function renderSpecs(){
-  const m = MODELS.find(x=>x.id===$('modelSelect').value);
-  if(!m) return;
-  currentModel=m;
-  const ex = MODEL_META[m.id]||{};
-  $('sp-type').textContent    = m.type||'—';
-  $('sp-params').textContent  = m.params||'—';
-  $('sp-protocol').textContent= ex.protocol||'—';
-  $('sp-input').textContent   = ex.input||'—';
-  $('sp-acc').textContent     = ex.acc ? ex.acc : '—';
-  $('sp-f1').textContent      = ex.f1  ? ex.f1  : '—';
-  $('sp-auc').textContent     = ex.auc ? ex.auc : '—';
-  $('sp-ece').textContent     = ex.ece||'—';
-  $('sp-lat').textContent     = ex.lat||'—';
-  $('sp-xai').textContent     = ex.xai||'—';
+  const m = MODELS.find(x=>x.id===$('modelSelect').value); if(!m) return;
+  currentModel=m; const ex=MODEL_META[m.id]||{};
+  $('sp-type').textContent=m.type||'—';
+  $('sp-params').textContent=m.params||'—';
+  $('sp-protocol').textContent=ex.protocol||'—';
+  $('sp-input').textContent=ex.input||'—';
+  $('sp-acc').textContent=ex.acc||'—';
+  $('sp-f1').textContent=ex.f1||'—';
+  $('sp-auc').textContent=ex.auc||'—';
+  $('sp-ece').textContent=ex.ece||'—';
+  $('sp-lat').textContent=ex.lat||'—';
+  $('sp-xai').textContent=ex.xai||'—';
 }
 
 async function loadModel(){
-  const id = $('modelSelect').value;
-  setModelStatus('busy','Loading '+id+' …');
-  log('Loading checkpoint: '+id);
-  try{
-    const fd=new FormData(); fd.append('model',id);
-    await fetch('/api/load',{method:'POST',body:fd});
-    setModelStatus('ready',id+' ready');
-    log('Model ready: '+id,'ok');
-  }catch(e){
-    setModelStatus('error','Load failed'); log('Load error: '+e.message,'err');
-  }
+  const id=$('modelSelect').value; setStatus('busy','Loading '+id+'…'); log('Loading checkpoint: '+id);
+  try{ const fd=new FormData(); fd.append('model',id); await fetch('/api/load',{method:'POST',body:fd});
+    setStatus('ready',id+' ready'); log('Model ready: '+id,'ok');
+  }catch(e){ setStatus('error','Load failed'); log('Load error: '+e.message,'err'); }
 }
-
-function setModelStatus(cls,txt){
-  $('modelStatus').className = cls;
-  $('modelStatus').textContent = txt;
-  $('modelDot').className = 'dot '+(cls==='ready'?'green':cls==='busy'?'amber':'red');
+function setStatus(cls,txt){
+  $('modelStatus').className=cls; $('modelStatus').textContent=txt;
+  $('modelDot').className='dot '+(cls==='ready'?'live':cls==='busy'?'busy':'err');
 }
-
 $('modelSelect').addEventListener('change',()=>{ renderSpecs(); loadModel(); clearResult(); });
 
-/* ── File handling ── */
-$('dropZone').onclick = ()=>$('fileInput').click();
-$('fileInput').onchange = e=>setFile(e.target.files[0]);
+$('dropZone').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=e=>setFile(e.target.files[0]);
 ['dragover','dragenter'].forEach(ev=>$('dropZone').addEventListener(ev,e=>{e.preventDefault();$('dropZone').classList.add('over');}));
 ['dragleave','drop'].forEach(ev=>$('dropZone').addEventListener(ev,e=>{e.preventDefault();$('dropZone').classList.remove('over');}));
 $('dropZone').addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
@@ -532,156 +541,103 @@ $('dropZone').addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
 function setFile(f){
   if(!f) return; file=f;
   const url=URL.createObjectURL(f);
-  $('previewImg').src=url;
-  $('previewCard').style.display='block';
-  $('btnRun').disabled=false;
-  $('errMsg').textContent='';
-
-  /* Scan metadata */
-  $('sm-name').textContent = f.name.length>22 ? f.name.slice(0,19)+'…' : f.name;
+  $('previewImg').src=url; $('previewCard').style.display='block';
+  $('scanMetaWrap').style.display='block';
+  $('btnRun').disabled=false; $('errMsg').textContent='';
+  $('sm-name').textContent = f.name.length>20?f.name.slice(0,17)+'…':f.name;
   $('sm-size').textContent = (f.size/1024).toFixed(1)+' KB';
-  $('sm-fmt').textContent  = f.type||f.name.split('.').pop().toUpperCase();
-  $('sm-cs').textContent   = 'RGB (pipeline converts to LAB for CLAHE)';
-
-  /* Read actual pixel dimensions */
-  const img=new Image();
-  img.onload=()=>{ $('sm-dim').textContent=img.naturalWidth+' × '+img.naturalHeight+' px'; };
-  img.src=url;
-
+  $('sm-fmt').textContent  = (f.type||f.name.split('.').pop()).replace('image/','').toUpperCase();
+  const img=new Image(); img.onload=()=>$('sm-dim').textContent=img.naturalWidth+' × '+img.naturalHeight; img.src=url;
   log(`Scan loaded: ${f.name} (${(f.size/1024).toFixed(1)} KB)`);
 }
+function clearResult(){ $('placeholder').style.display='block'; $('resultPanel').style.display='none'; }
 
-/* ── Predict ── */
 $('btnRun').onclick = async()=>{
   if(!file) return;
   $('errMsg').textContent=''; $('btnRun').disabled=true;
-  $('btnRun').textContent='Analysing…';
-  setSysState('busy');
+  $('btnRun').innerHTML='<span class="spin"></span> Analysing…';
+  $('sysState').textContent='Processing'; $('sysDot').className='dot busy';
   pipeReset(); clearResult();
 
-  const steps = [
-    ['load',  'Decoding image bytes into PIL RGB'],
-    ['crop',  'Applying Otsu brain-region crop'],
-    ['clahe', 'CLAHE on L-channel (clip 2.0, grid 8×8)'],
+  const steps=[
+    ['load','Decoding image bytes to PIL RGB'],
+    ['crop','Applying Otsu brain-region crop'],
+    ['clahe','CLAHE on L-channel (clip 2.0, grid 8×8)'],
     ['resize','Resizing to model input resolution'],
-    ['norm',  'Applying ImageNet μ/σ normalisation'],
-    ['infer', 'Running model forward pass ('+($('modelSelect').value)+')'],
-    ['grad',  'Computing Grad-CAM via backward hooks'],
+    ['norm','Applying ImageNet μ/σ normalisation'],
+    ['infer','Forward pass · '+$('modelSelect').value],
+    ['grad','Computing Grad-CAM via backward hooks'],
   ];
-
-  /* Animate pipeline steps with staggered timing */
-  let stepIdx=0;
-  const stepTimer = setInterval(()=>{
-    if(stepIdx>0) pipeDone(steps[stepIdx-1][0]);
-    if(stepIdx<steps.length){
-      pipeActive(steps[stepIdx][0]);
-      log(steps[stepIdx][1]);
-      stepIdx++;
-    } else { clearInterval(stepTimer); }
-  }, 250);
+  let i=0;
+  const timer=setInterval(()=>{
+    if(i>0) pipeDone(steps[i-1][0]);
+    if(i<steps.length){ pipeActive(steps[i][0]); log(steps[i][1]); i++; }
+    else clearInterval(timer);
+  },240);
 
   const t0=performance.now();
   try{
-    const fd=new FormData();
-    fd.append('model',$('modelSelect').value); fd.append('file',file);
-    const res = await fetch('/api/predict',{method:'POST',body:fd});
-    if(!res.ok){ throw new Error((await res.json()).detail||'prediction failed'); }
-    const data = await res.json();
-    const elapsed = (performance.now()-t0).toFixed(0);
-
-    clearInterval(stepTimer);
-    PIPES.forEach(p=>pipeDone(p));
-
-    infCount++;
-    $('infCount').textContent = infCount;
-    log(`Inference complete — ${elapsed} ms round-trip`,'ok');
-    render(data, elapsed);
+    const fd=new FormData(); fd.append('model',$('modelSelect').value); fd.append('file',file);
+    const res=await fetch('/api/predict',{method:'POST',body:fd});
+    if(!res.ok) throw new Error((await res.json()).detail||'prediction failed');
+    const data=await res.json(); const ms=(performance.now()-t0).toFixed(0);
+    clearInterval(timer); PIPES.forEach(pipeDone);
+    infCount++; $('infCount').textContent=infCount;
+    log(`Inference complete — ${ms} ms round-trip`,'ok');
+    render(data,ms);
   }catch(e){
-    clearInterval(stepTimer); pipeReset();
-    $('errMsg').textContent='Error: '+e.message;
-    log('Prediction failed: '+e.message,'err');
+    clearInterval(timer); pipeReset();
+    $('errMsg').textContent='Error: '+e.message; log('Prediction failed: '+e.message,'err');
   }finally{
     $('btnRun').disabled=false;
-    $('btnRun').textContent='Run Analysis';
-    setSysState('ready');
+    $('btnRun').innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Run analysis';
+    $('sysState').textContent='Ready'; $('sysDot').className='dot live';
   }
 };
 
-function setSysState(s){
-  $('sysState').textContent = s==='busy' ? 'PROCESSING' : 'READY';
-  $('sysDot').className = 'dot '+(s==='busy'?'amber':'green');
-}
+function render(r,ms){
+  $('placeholder').style.display='none'; $('resultPanel').style.display='block';
+  const pct=(r.confidence*100).toFixed(1);
+  $('rClass').textContent=r.pred_label; $('rConf').textContent=pct+'%';
 
-function clearResult(){
-  $('placeholder').style.display='block';
-  $('resultPanel').style.display='none';
-}
+  const lvl = r.confidence>=.90?['high','High confidence']:r.confidence>=.70?['mod','Moderate confidence']:['low','Low confidence — review carefully'];
+  $('rBadge').className='conf-badge '+lvl[0]; $('rBadge').textContent=lvl[1];
+  const ece=MODEL_META[r.model]?.ece||'—';
+  $('rCalib').textContent=`Calibrated ECE ${ece} · model ${r.model}`;
 
-/* ── Render results ── */
-function render(r, ms){
-  $('placeholder').style.display='none';
-  $('resultPanel').style.display='block';
+  $('scoreBars').innerHTML = r.scores.map((s,i)=>{
+    const top=i===0, v=(s.score*100).toFixed(1);
+    return `<div class="score"><div class="srow"><span class="scls">${s.label}</span>
+      <span class="spct ${top?'top':''}">${v}%</span></div>
+      <div class="bar-track"><div class="bar-fill ${top?'top':''}" data-w="${v}"></div></div></div>`;
+  }).join('');
+  requestAnimationFrame(()=>document.querySelectorAll('.bar-fill').forEach(f=>f.style.width=f.dataset.w+'%'));
 
-  const pct = (r.confidence*100).toFixed(1);
-  $('rClass').textContent = r.pred_label;
-  $('rConf').textContent  = pct+'%';
-
-  /* Confidence annotation */
-  const level = r.confidence>=.90 ? 'High confidence' : r.confidence>=.70 ? 'Moderate confidence' : 'Low confidence — review carefully';
-  const ece   = MODEL_META[r.model]?.ece || '—';
-  $('rCalib').innerHTML = `${level} · ECE (calibrated) = ${ece} · model: ${r.model}`;
-
-  /* Score bars */
-  const bl = $('scoreBars');
-  bl.innerHTML='';
-  r.scores.forEach((s,i)=>{
-    const top = i===0;
-    const v = (s.score*100).toFixed(1);
-    bl.innerHTML += `
-      <div class="score-item">
-        <div class="score-row">
-          <span class="cls">${s.label}</span>
-          <span class="pct ${top?'top':''}">${v}%</span>
-        </div>
-        <div class="track"><div class="fill ${top?'top':''}" data-w="${v}"></div></div>
-      </div>`;
-  });
-  requestAnimationFrame(()=>{
-    document.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%');
-  });
-
-  /* Grad-CAM */
   const gc=$('gcBlock');
   if(r.overlay){
-    gc.innerHTML=`
-      <div class="gc-hd">Grad-CAM attention map</div>
-      <img class="gc-img" src="${r.overlay}" alt="Grad-CAM heatmap">
-      <div class="gc-caption">
-        Warm regions = areas with highest gradient magnitude toward the predicted class.<br>
-        Method: last Conv2d forward/backward hooks → α<sub>c</sub> = GAP(∂y<sub>c</sub>/∂A<sup>k</sup>) → ReLU(Σ α<sub>c</sub>·A<sup>k</sup>).
-      </div>`;
-    /* Anatomy note */
+    gc.innerHTML=`<div class="section-label">Grad-CAM attention map</div>
+      <img src="${r.overlay}" alt="Grad-CAM heatmap">
+      <div class="cap">Warm regions drove the <b style="color:var(--teal)">${r.pred_label}</b> prediction.
+      Computed from the last conv layer: <code>α = GAP(∂y/∂A)</code> → <code>ReLU(Σ α·A)</code>.</div>`;
     $('anatomyNote').style.display='block';
-    $('anatomyTable').innerHTML=`
-      <tr><td>${r.pred_label}</td><td>${ANATOMY[r.pred_label]||'—'}</td></tr>`;
-    log('Grad-CAM overlay generated for class: '+r.pred_label,'ok');
-  } else {
-    gc.innerHTML=`<div class="gc-na">Grad-CAM not applicable — HOG+SVM is a linear classifier with no convolutional feature maps. Spatial explanations are not available for this model type.</div>`;
+    $('anatomyTable').innerHTML=`<b>${r.pred_label}.</b> ${ANATOMY[r.pred_label]||''}`;
+    log('Grad-CAM overlay generated for '+r.pred_label,'ok');
+  }else{
+    gc.innerHTML=`<div class="section-label">Explainability</div>
+      <div class="gc-na">Grad-CAM is not applicable to HOG + SVM — a linear classifier has no convolutional feature maps to visualise.</div>`;
     $('anatomyNote').style.display='none';
   }
 
-  /* Inference metadata cards */
   const ex=MODEL_META[r.model]||{};
   $('metaGrid').innerHTML=`
-    <div class="meta-card"><div class="mk">Round-trip</div><div class="mv blue">${ms} ms</div></div>
-    <div class="meta-card"><div class="mk">Device</div><div class="mv">${(r.device||'cpu').toUpperCase()}</div></div>
-    <div class="meta-card"><div class="mk">Architecture</div><div class="mv">${r.model}</div></div>
-    <div class="meta-card"><div class="mk">Params</div><div class="mv">${ex.params||currentModel?.params||'—'}</div></div>
-    <div class="meta-card"><div class="mk">Protocol B Acc</div><div class="mv green">${ex.acc||'—'}</div></div>
-    <div class="meta-card"><div class="mk">Protocol B F1</div><div class="mv green">${ex.f1||'—'}</div></div>
-  `;
+    <div class="mcard"><div class="mk">Round-trip</div><div class="mv blue">${ms} ms</div></div>
+    <div class="mcard"><div class="mk">Device</div><div class="mv">${(r.device||'cpu').toUpperCase()}</div></div>
+    <div class="mcard"><div class="mk">Architecture</div><div class="mv" style="font-size:13px">${r.model}</div></div>
+    <div class="mcard"><div class="mk">Parameters</div><div class="mv">${ex.params||currentModel?.params||'—'}</div></div>
+    <div class="mcard"><div class="mk">Benchmark acc</div><div class="mv teal">${ex.acc||'—'}</div></div>
+    <div class="mcard"><div class="mk">Benchmark F1</div><div class="mv teal">${ex.f1||'—'}</div></div>`;
 
-  log(`Result: ${r.pred_label} (${(r.confidence*100).toFixed(1)}%) via ${r.model}`,'ok');
+  log(`Result: ${r.pred_label} (${pct}%) via ${r.model}`,'ok');
 }
 
 init();
