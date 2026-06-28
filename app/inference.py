@@ -113,6 +113,14 @@ def load_model(name: str):
         state = torch.load(MODELS_DIR / DEEP_FILES[name], map_location=DEVICE)
         model.load_state_dict(state)
         model.to(DEVICE).eval()
+        # Disable in-place activations (e.g. VGG-16's inplace ReLUs). Grad-CAM
+        # registers a backward hook on the last conv layer; an in-place op right
+        # after it modifies that hooked output as a view, which autograd forbids
+        # ("...is a view and is being modified inplace"). Out-of-place is
+        # functionally identical for inference and only costs a little memory.
+        for m in model.modules():
+            if getattr(m, "inplace", False):
+                m.inplace = False
         obj = ("deep", model)
 
     _cache[name] = obj
