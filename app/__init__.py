@@ -1,1 +1,1 @@
-"""Brain Tumor MRI Classifier — live demo app (FastAPI + the project's src/ pipeline)."""
+"""Brain Tumor MRI Classifier — live demo app (FastAPI + the project's src/ pipeline).""
